@@ -28,6 +28,7 @@ console = "0.16"
 indicatif = "0.18"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
+termimad = "0.31"
 which = "8.0"
 
 [profile.release]

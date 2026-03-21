@@ -38,6 +38,13 @@ pub enum Commands {
     /// Run verification for the current milestone
     Check,
 
+    /// Advance to the next milestone after verification
+    #[command(name = "next-milestone")]
+    NextMilestone,
+
+    /// Show the explanation for the current milestone
+    Explain,
+
     /// Generate shell completion scripts
     Completions {
         /// Shell to generate completions for

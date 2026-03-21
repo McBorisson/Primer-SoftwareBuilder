@@ -27,6 +27,10 @@ fn main() -> Result<()> {
                 Commands::Doctor(args) => commands::doctor::run(&primer_root, args),
                 Commands::Status => commands::status::run(&primer_root, &cli.primer_root),
                 Commands::Check => commands::check::run(&primer_root, &cli.primer_root),
+                Commands::NextMilestone => {
+                    commands::next_milestone::run(&primer_root, &cli.primer_root)
+                }
+                Commands::Explain => commands::explain::run(&primer_root, &cli.primer_root),
                 Commands::Completions { .. } => unreachable!(),
             }
         }

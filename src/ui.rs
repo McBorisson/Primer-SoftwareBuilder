@@ -2,6 +2,10 @@ use comfy_table::{Attribute, Cell, Color, Table, presets::UTF8_FULL};
 use console::style;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Duration;
+use termimad::{
+    MadSkin,
+    crossterm::style::{Attribute as MadAttribute, Color as MadColor},
+};
 
 use crate::recipe::RecipeSummary;
 
@@ -77,6 +81,18 @@ pub fn reference(kind: &str, name: impl AsRef<str>) -> String {
         style(kind).dim().italic(),
         style(name).cyan().bold()
     )
+}
+
+pub fn print_markdown(markdown: &str) {
+    let mut skin = MadSkin::default();
+    skin.set_headers_fg(MadColor::Cyan);
+    skin.headers[0].add_attr(MadAttribute::Bold);
+    skin.headers[1].add_attr(MadAttribute::Bold);
+    skin.headers[2].add_attr(MadAttribute::Bold);
+    skin.bold.set_fg(MadColor::White);
+    skin.italic.set_fg(MadColor::Grey);
+    skin.inline_code.set_fg(MadColor::Green);
+    skin.print_text(markdown);
 }
 
 pub fn display_recipe_table(recipes: &[RecipeSummary]) {
