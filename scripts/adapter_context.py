@@ -44,6 +44,7 @@ primer_state:
 - Build the current milestone in small steps and do not implement future milestones early.
 - Run current milestone `tests/check.sh` before declaring completion.
 - Only run `primer-next-milestone` after `primer-check` has marked the current milestone as verified.
+- Use the local `primer` CLI as the source of truth for `primer-check`, `primer-status`, `primer-explain`, and `primer-next-milestone`.
 - Use the generated Primer workflow actions for behavior rules.
 
 ## Available workflow actions

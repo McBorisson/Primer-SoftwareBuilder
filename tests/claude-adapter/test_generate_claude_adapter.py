@@ -69,6 +69,10 @@ class ClaudeAdapterGenerationTests(unittest.TestCase):
             self.assertIn("track: learner", content)
             self.assertIn("stack_id: c-x86", content)
             self.assertIn("`primer-build`", content)
+            self.assertIn(
+                "Use the local `primer` CLI as the source of truth for `primer-check`, `primer-status`, `primer-explain`, and `primer-next-milestone`.",
+                content,
+            )
 
     def test_track_and_milestone_overrides(self) -> None:
         with tempfile.TemporaryDirectory(prefix="primer-claude-gen-") as tmp:
@@ -88,7 +92,7 @@ class ClaudeAdapterGenerationTests(unittest.TestCase):
             self.assertIn("track: builder", content)
             self.assertIn("milestone_id: 03-vga-output", content)
 
-    def test_shared_commands_are_copied_exactly(self) -> None:
+    def test_workflow_commands_are_cli_backed(self) -> None:
         with tempfile.TemporaryDirectory(prefix="primer-claude-gen-") as tmp:
             out = Path(tmp)
             result = run_cmd(
@@ -99,17 +103,38 @@ class ClaudeAdapterGenerationTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, msg=result.stderr)
 
-            generated_names = {
-                "build.md": "primer-build.md",
-                "next-milestone.md": "primer-next-milestone.md",
-                "check.md": "primer-check.md",
-                "explain.md": "primer-explain.md",
-                "status.md": "primer-status.md",
-            }
-            for name in ["build.md", "next-milestone.md", "check.md", "explain.md", "status.md"]:
-                generated = read(out / ".claude" / "commands" / generated_names[name])
-                shared = read(SHARED_DIR / name)
-                self.assertEqual(generated, shared, msg=f"mismatch in {name}")
+            check_command = read(out / ".claude" / "commands" / "primer-check.md")
+            self.assertIn("Run `primer check` from the current workspace root.", check_command)
+            self.assertIn(read(SHARED_DIR / "check.md").strip(), check_command)
+
+            status_command = read(out / ".claude" / "commands" / "primer-status.md")
+            self.assertIn("Run `primer status` from the current workspace root.", status_command)
+            self.assertIn(read(SHARED_DIR / "status.md").strip(), status_command)
+
+            explain_command = read(out / ".claude" / "commands" / "primer-explain.md")
+            self.assertIn("Run `primer explain` from the current workspace root.", explain_command)
+            self.assertIn(read(SHARED_DIR / "explain.md").strip(), explain_command)
+
+            next_command = read(out / ".claude" / "commands" / "primer-next-milestone.md")
+            self.assertIn(
+                "Run `primer next-milestone` from the current workspace root.", next_command
+            )
+            self.assertIn(read(SHARED_DIR / "next-milestone.md").strip(), next_command)
+
+    def test_build_command_uses_cli_for_context(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="primer-claude-gen-") as tmp:
+            out = Path(tmp)
+            result = run_cmd(
+                "scripts/generate-claude-adapter",
+                str(RECIPE_DIR),
+                "--output-dir",
+                str(out),
+            )
+            self.assertEqual(result.returncode, 0, msg=result.stderr)
+
+            build_command = read(out / ".claude" / "commands" / "primer-build.md")
+            self.assertIn("Run `primer build` from the current workspace root.", build_command)
+            self.assertIn(read(SHARED_DIR / "build.md").strip(), build_command)
 
     def test_invalid_milestone_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory(prefix="primer-claude-gen-") as tmp:

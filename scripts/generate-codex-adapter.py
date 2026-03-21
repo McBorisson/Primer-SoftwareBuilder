@@ -20,6 +20,7 @@ except Exception as exc:  # pragma: no cover
 ROOT = Path(__file__).resolve().parent.parent
 SHARED_DIR = ROOT / "adapters" / "_shared"
 SKILL_FILES = ["build.md", "check.md", "explain.md", "status.md", "next-milestone.md"]
+CLI_BACKED_SKILLS = {"check", "explain", "status", "next-milestone"}
 
 
 def load_yaml(path: Path) -> Any:
@@ -109,6 +110,39 @@ def build_skill_metadata(recipe_id: str, recipe_title: str, shared_filename: str
     return skill_name, display_name, short_description, description, default_prompt
 
 
+def render_cli_backed_skill_body(*, skill_name: str, command_name: str, shared_body: str) -> str:
+    cli_command = f"primer {command_name}"
+    return f"""Use the local Primer CLI as the source of truth for this workflow action.
+
+## Required action
+
+1. Run `{cli_command}` from the current workspace root.
+2. Return the CLI output to the user faithfully.
+3. Do not manually edit `primer_state`; the CLI owns state transitions for this skill.
+4. If the `primer` executable is unavailable, stop and tell the user to install or build the Primer CLI.
+
+## Shared contract reference
+
+{shared_body}
+"""
+
+
+def render_build_skill_body(*, shared_body: str) -> str:
+    return f"""Use the local Primer CLI to load the current milestone spec and track guidance before making changes.
+
+## Required action
+
+1. Run `primer build` from the current workspace root.
+2. Use that output as the current milestone contract and active track guidance.
+3. Then implement only the current milestone scope in the workspace.
+4. Recommend running `primer-check` when the milestone is complete.
+
+## Shared contract reference
+
+{shared_body}
+"""
+
+
 def generate(recipe_dir: Path, output_dir: Path, track: str, milestone_id: str | None) -> None:
     recipe_dir = recipe_dir.resolve()
     output_dir = output_dir.resolve()
@@ -145,10 +179,21 @@ def generate(recipe_dir: Path, output_dir: Path, track: str, milestone_id: str |
         src = SHARED_DIR / filename
         if not src.exists():
             raise ValueError(f"{src}: required shared command definition missing")
-        body = src.read_text(encoding="utf-8")
+        shared_body = src.read_text(encoding="utf-8")
+        command_name = filename.removesuffix(".md")
         skill_name, display_name, short_description, description, default_prompt = build_skill_metadata(
             recipe_id, recipe_title, filename
         )
+        if command_name in CLI_BACKED_SKILLS:
+            body = render_cli_backed_skill_body(
+                skill_name=skill_name,
+                command_name=command_name,
+                shared_body=shared_body,
+            )
+        elif command_name == "build":
+            body = render_build_skill_body(shared_body=shared_body)
+        else:
+            body = shared_body
         skill_dir = skills_root / skill_name
         skill_agents_dir = skill_dir / "agents"
         skill_agents_dir.mkdir(parents=True, exist_ok=True)

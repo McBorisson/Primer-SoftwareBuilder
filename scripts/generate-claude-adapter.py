@@ -28,6 +28,7 @@ COMMAND_NAME_MAP = {
     "status.md": "primer-status.md",
     "next-milestone.md": "primer-next-milestone.md",
 }
+CLI_BACKED_COMMANDS = {"check", "explain", "status", "next-milestone"}
 
 
 def load_yaml(path: Path) -> Any:
@@ -123,7 +124,59 @@ def generate(recipe_dir: Path, output_dir: Path, track: str, milestone_id: str |
         src = SHARED_DIR / filename
         if not src.exists():
             raise ValueError(f"{src}: required shared command definition missing")
-        shutil.copyfile(src, commands_dir / COMMAND_NAME_MAP[filename])
+        body = src.read_text(encoding="utf-8")
+        command_name = filename.removesuffix(".md")
+        target = commands_dir / COMMAND_NAME_MAP[filename]
+        if command_name in CLI_BACKED_COMMANDS:
+            target.write_text(
+                render_cli_backed_claude_command(command_name=command_name, shared_body=body),
+                encoding="utf-8",
+            )
+        elif command_name == "build":
+            target.write_text(
+                render_build_claude_command(shared_body=body),
+                encoding="utf-8",
+            )
+        else:
+            shutil.copyfile(src, target)
+
+
+def render_cli_backed_claude_command(*, command_name: str, shared_body: str) -> str:
+    cli_command = f"primer {command_name}"
+    skill_name = f"primer-{command_name}"
+    return f"""# Primer Skill: `{skill_name}`
+
+Use the local Primer CLI as the source of truth for this workflow action.
+
+## Required action
+
+1. Run `{cli_command}` from the current workspace root.
+2. Return the CLI output to the user faithfully.
+3. Do not manually edit `primer_state`; the CLI owns state transitions for this skill.
+4. If the `primer` executable is unavailable, stop and tell the user to install or build the Primer CLI.
+
+## Shared contract reference
+
+{shared_body}
+"""
+
+
+def render_build_claude_command(*, shared_body: str) -> str:
+    return f"""# Primer Skill: `primer-build`
+
+Use the local Primer CLI to load the current milestone spec and track guidance before making changes.
+
+## Required action
+
+1. Run `primer build` from the current workspace root.
+2. Use that output as the current milestone contract and active track guidance.
+3. Then implement only the current milestone scope in the workspace.
+4. Recommend running `primer-check` when the milestone is complete.
+
+## Shared contract reference
+
+{shared_body}
+"""
 
 
 def main() -> int:

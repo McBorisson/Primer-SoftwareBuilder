@@ -74,6 +74,10 @@ class CodexAdapterGenerationTests(unittest.TestCase):
             self.assertIn("stack_id: c-x86", content)
             self.assertIn("`primer-build`", content)
             self.assertIn("`primer-next-milestone`", content)
+            self.assertIn(
+                "Use the local `primer` CLI as the source of truth for `primer-check`, `primer-status`, `primer-explain`, and `primer-next-milestone`.",
+                content,
+            )
 
     def test_track_and_milestone_overrides(self) -> None:
         with tempfile.TemporaryDirectory(prefix="primer-codex-gen-") as tmp:
@@ -93,7 +97,7 @@ class CodexAdapterGenerationTests(unittest.TestCase):
             self.assertIn("track: builder", content)
             self.assertIn("milestone_id: 03-vga-output", content)
 
-    def test_shared_tasks_are_rendered_as_skills(self) -> None:
+    def test_workflow_skills_are_cli_backed(self) -> None:
         with tempfile.TemporaryDirectory(prefix="primer-codex-gen-") as tmp:
             out = Path(tmp)
             result = run_cmd(
@@ -104,11 +108,40 @@ class CodexAdapterGenerationTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, msg=result.stderr)
 
-            for name in ["build.md", "next-milestone.md", "check.md", "explain.md", "status.md"]:
-                skill_name = f"primer-{name.removesuffix('.md')}"
-                generated = read(out / ".agents" / "skills" / skill_name / "SKILL.md")
-                shared = read(SHARED_DIR / name)
-                self.assertIn(shared.strip(), generated, msg=f"shared body missing in {name}")
+            check_skill = read(out / ".agents" / "skills" / "primer-check" / "SKILL.md")
+            self.assertIn("Run `primer check` from the current workspace root.", check_skill)
+            self.assertIn(read(SHARED_DIR / "check.md").strip(), check_skill)
+
+            status_skill = read(out / ".agents" / "skills" / "primer-status" / "SKILL.md")
+            self.assertIn("Run `primer status` from the current workspace root.", status_skill)
+            self.assertIn(read(SHARED_DIR / "status.md").strip(), status_skill)
+
+            explain_skill = read(out / ".agents" / "skills" / "primer-explain" / "SKILL.md")
+            self.assertIn("Run `primer explain` from the current workspace root.", explain_skill)
+            self.assertIn(read(SHARED_DIR / "explain.md").strip(), explain_skill)
+
+            next_skill = read(
+                out / ".agents" / "skills" / "primer-next-milestone" / "SKILL.md"
+            )
+            self.assertIn(
+                "Run `primer next-milestone` from the current workspace root.", next_skill
+            )
+            self.assertIn(read(SHARED_DIR / "next-milestone.md").strip(), next_skill)
+
+    def test_build_skill_uses_cli_for_context(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="primer-codex-gen-") as tmp:
+            out = Path(tmp)
+            result = run_cmd(
+                "scripts/generate-codex-adapter",
+                str(RECIPE_DIR),
+                "--output-dir",
+                str(out),
+            )
+            self.assertEqual(result.returncode, 0, msg=result.stderr)
+
+            build_skill = read(out / ".agents" / "skills" / "primer-build" / "SKILL.md")
+            self.assertIn("Run `primer build` from the current workspace root.", build_skill)
+            self.assertIn(read(SHARED_DIR / "build.md").strip(), build_skill)
 
     def test_skill_files_are_generated_for_cli_discovery(self) -> None:
         with tempfile.TemporaryDirectory(prefix="primer-codex-gen-") as tmp:
@@ -126,7 +159,7 @@ class CodexAdapterGenerationTests(unittest.TestCase):
                 out / ".agents" / "skills" / "primer-build" / "agents" / "openai.yaml"
             )
             self.assertIn("name: primer-build", skill)
-            self.assertIn("Use when the user wants to build", skill)
+            self.assertIn("Use the local Primer CLI to load the current milestone spec", skill)
             self.assertIn('display_name: "Build Your Own Operating System: Build"', openai_yaml)
             self.assertIn("default_prompt:", openai_yaml)
 
@@ -144,7 +177,7 @@ class CodexAdapterGenerationTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("is not declared in milestones", result.stderr)
 
-    def test_command_parity_with_claude_adapter(self) -> None:
+    def test_cli_wrapper_parity_with_claude_adapter(self) -> None:
         with tempfile.TemporaryDirectory(prefix="primer-parity-") as tmp:
             base = Path(tmp)
             out_claude = base / "claude"
@@ -179,7 +212,10 @@ class CodexAdapterGenerationTests(unittest.TestCase):
                 claude_cmd = read(out_claude / ".claude" / "commands" / claude_names[name])
                 skill_name = f"primer-{name.removesuffix('.md')}"
                 codex_skill = read(out_codex / ".agents" / "skills" / skill_name / "SKILL.md")
-                self.assertIn(claude_cmd.strip(), codex_skill, msg=f"parity mismatch in {name}")
+                self.assertIn("## Shared contract reference", claude_cmd)
+                self.assertIn("## Shared contract reference", codex_skill)
+                self.assertIn(read(SHARED_DIR / name).strip(), claude_cmd)
+                self.assertIn(read(SHARED_DIR / name).strip(), codex_skill)
 
     def test_agents_and_claude_context_are_identical(self) -> None:
         with tempfile.TemporaryDirectory(prefix="primer-context-parity-") as tmp:
