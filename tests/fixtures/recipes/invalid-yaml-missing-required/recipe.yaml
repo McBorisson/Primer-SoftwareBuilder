@@ -1,0 +1,18 @@
+id: invalid-yaml-missing-required
+title: Invalid Fixture Missing Required
+description: This fixture omits required difficulty field.
+estimated_hours: 1
+stack:
+  id: bash
+  label: Bash
+  tools:
+    - bash
+tracks:
+  learner:
+    description: Learner
+  builder:
+    description: Builder
+milestones:
+  - id: 01-start
+    title: Start
+    demo: Demo text.
