@@ -1,17 +1,16 @@
 use anyhow::{Result, bail};
 use comfy_table::Color;
 use std::collections::BTreeMap;
-use std::path::Path;
 use which::which;
 
 use crate::cli::DoctorArgs;
 use crate::recipe;
 use crate::ui::{self, DoctorRow};
 
-pub fn run(primer_root: &Path, args: DoctorArgs) -> Result<()> {
+pub fn run(source: &recipe::RecipeSource, args: DoctorArgs) -> Result<()> {
     let recipe = match args.recipe_id.as_deref() {
-        Some(recipe_id) => recipe::load_by_id(primer_root, recipe_id)?,
-        None => recipe::default_recipe(primer_root)?,
+        Some(recipe_id) => recipe::load_by_id(source, recipe_id)?,
+        None => recipe::default_recipe(source)?,
     };
     let milestone = recipe::resolve_initial_milestone(&recipe, args.milestone.as_deref())?;
     let milestone_index = recipe::milestone_index(&recipe, &milestone.id)?;

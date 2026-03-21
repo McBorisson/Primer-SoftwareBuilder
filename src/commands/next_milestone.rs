@@ -5,19 +5,11 @@ use crate::recipe;
 use crate::state;
 use crate::ui;
 
-pub fn run(primer_root: &Path, workspace_hint: &Path) -> Result<()> {
+pub fn run(workspace_hint: &Path) -> Result<()> {
     let mut state = state::load_from_workspace(workspace_hint)?;
-    let recipe = recipe::load_by_id(primer_root, &state.recipe_id)?;
+    let recipe = recipe::load_from_path(&state.recipe_path)?;
     let current = recipe::resolve_initial_milestone(&recipe, Some(&state.milestone_id))?;
     let current_index = recipe::milestone_index(&recipe, &state.milestone_id)?;
-
-    if state.recipe_path != recipe.path {
-        bail!(
-            "workspace state points to {}, but resolved recipe is {}",
-            state.recipe_path.display(),
-            recipe.path.display()
-        );
-    }
 
     if state.verified_milestone_id.as_deref() != Some(current.id.as_str()) {
         bail!(

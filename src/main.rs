@@ -1,8 +1,11 @@
+mod adapter;
+mod bundled;
 mod cli;
 mod commands;
 mod recipe;
 mod state;
 mod ui;
+mod validation;
 mod workspace;
 
 use anyhow::Result;
@@ -20,18 +23,17 @@ fn main() -> Result<()> {
             Ok(())
         }
         command => {
-            let primer_root = workspace::resolve_primer_root(&cli.primer_root)?;
+            let source = recipe::source(cli.primer_root.as_deref())?;
+            let workspace_hint = std::env::current_dir()?;
             match command {
-                Commands::List => commands::list::run(&primer_root),
-                Commands::Init(args) => commands::init::run(&primer_root, args),
-                Commands::Doctor(args) => commands::doctor::run(&primer_root, args),
-                Commands::Status => commands::status::run(&primer_root, &cli.primer_root),
-                Commands::Check => commands::check::run(&primer_root, &cli.primer_root),
-                Commands::Build => commands::build::run(&primer_root, &cli.primer_root),
-                Commands::NextMilestone => {
-                    commands::next_milestone::run(&primer_root, &cli.primer_root)
-                }
-                Commands::Explain => commands::explain::run(&primer_root, &cli.primer_root),
+                Commands::List => commands::list::run(&source),
+                Commands::Init(args) => commands::init::run(&source, args),
+                Commands::Doctor(args) => commands::doctor::run(&source, args),
+                Commands::Status => commands::status::run(&workspace_hint),
+                Commands::Check => commands::check::run(&workspace_hint),
+                Commands::Build => commands::build::run(&workspace_hint),
+                Commands::NextMilestone => commands::next_milestone::run(&workspace_hint),
+                Commands::Explain => commands::explain::run(&workspace_hint),
                 Commands::Completions { .. } => unreachable!(),
             }
         }

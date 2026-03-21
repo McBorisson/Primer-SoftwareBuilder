@@ -178,7 +178,11 @@ fn check_updates_verified_milestone_on_success() {
 
     let output = run_primer(&workspace_root, &["check"]);
 
-    assert!(output.status.success(), "stderr: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     let context = read_context(&workspace_root);
     assert!(context.contains("verified_milestone_id: 01-alpha"));
 }
@@ -216,7 +220,11 @@ fn next_milestone_advances_and_clears_verification() {
 
     let output = run_primer(&workspace_root, &["next-milestone"]);
 
-    assert!(output.status.success(), "stderr: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     let context = read_context(&workspace_root);
     assert!(context.contains("milestone_id: 02-beta"));
     assert!(context.contains("verified_milestone_id: null"));
@@ -228,7 +236,11 @@ fn build_shows_current_spec_and_track_guidance() {
 
     let output = run_primer(&workspace_root, &["build"]);
 
-    assert!(output.status.success(), "stderr: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("Milestone 01: Alpha"));
     assert!(stdout.contains("Explain the alpha task before coding."));
@@ -241,7 +253,11 @@ fn explain_shows_current_milestone_explanation() {
 
     let output = run_primer(&workspace_root, &["explain"]);
 
-    assert!(output.status.success(), "stderr: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("Explanation: 01-alpha"));
     assert!(stdout.contains("This is the alpha explanation."));

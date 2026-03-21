@@ -21,7 +21,6 @@ milestones:
     title: Bootloader
     demo: QEMU boots and prints a bootloader message.
     prerequisites:
-      - python3
       - nasm
       - qemu-system-i386
       - make
@@ -29,7 +28,6 @@ milestones:
     title: Kernel Entry Point
     demo: Control passes from bootloader to kernel entry code.
     prerequisites:
-      - python3
       - nasm
       - qemu-system-i386
       - make
@@ -39,7 +37,6 @@ milestones:
     title: VGA Text Driver
     demo: Kernel prints text via VGA memory.
     prerequisites:
-      - python3
       - nasm
       - qemu-system-i386
       - make
@@ -49,7 +46,6 @@ milestones:
     title: GDT + Interrupts
     demo: Keyboard input is handled via IRQ.
     prerequisites:
-      - python3
       - nasm
       - qemu-system-i386
       - make
@@ -59,7 +55,6 @@ milestones:
     title: Memory Manager
     demo: Basic allocator alloc/free behavior is validated.
     prerequisites:
-      - python3
       - nasm
       - qemu-system-i386
       - make
@@ -69,7 +64,6 @@ milestones:
     title: Process Scheduler
     demo: Two processes time-share via round-robin.
     prerequisites:
-      - python3
       - nasm
       - qemu-system-i386
       - make
@@ -79,7 +73,6 @@ milestones:
     title: Simple Filesystem
     demo: Kernel reads data from a disk image.
     prerequisites:
-      - python3
       - nasm
       - qemu-system-i386
       - make
@@ -89,7 +82,6 @@ milestones:
     title: Userspace Shell
     demo: A basic interactive shell runs in QEMU.
     prerequisites:
-      - python3
       - nasm
       - qemu-system-i386
       - make

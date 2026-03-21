@@ -24,7 +24,6 @@ This recipe takes you from a 512-byte bootloader to a minimal shell through 8 mi
 
 ## Prerequisites
 
-- `python3`: used by adapter generators and helper scripts
 - `nasm`: needed from milestone 01
 - `qemu-system-i386`: used to boot and verify the image
 - `make`: used in the learner project workspace
@@ -34,7 +33,7 @@ Notes:
 
 - Milestone 01 can be completed with `nasm`, `make`, and QEMU.
 - Milestone 02+ requires a real 32-bit bare-metal cross-compiler.
-- The milestone checks no longer require `timeout` or `gtimeout`; they fall back to `python3` if needed.
+- The milestone checks use `timeout` or `gtimeout` when available, and otherwise fall back to an internal shell timeout helper.
 
 ## Why the project Makefile changes
 
@@ -49,17 +48,14 @@ That means updating the project `Makefile` is expected as the milestones grow. W
 From a separate target workspace:
 
 ```bash
-PRIMER_ROOT=/path/to/primer
 mkdir -p ~/workspace/my-os
-cd ~/workspace/my-os
-"$PRIMER_ROOT/scripts/validate-recipe" "$PRIMER_ROOT/recipes/operating-system"
-"$PRIMER_ROOT/scripts/generate-claude-adapter" "$PRIMER_ROOT/recipes/operating-system" --output-dir .
+primer init operating-system --tool claude --path ~/workspace/my-os
 ```
 
 Or for Codex:
 
 ```bash
-"$PRIMER_ROOT/scripts/generate-codex-adapter" "$PRIMER_ROOT/recipes/operating-system" --output-dir .
+primer init operating-system --tool codex --path ~/workspace/my-os
 ```
 
 That generates both:
@@ -99,8 +95,4 @@ Recommended rhythm:
 
 ## Recipe validation
 
-Validate contract + structure:
-
-```bash
-scripts/validate-recipe recipes/operating-system
-```
+`primer init` validates the bundled recipe contract before writing adapter files into the workspace.

@@ -7,18 +7,10 @@ use crate::recipe;
 use crate::state;
 use crate::ui;
 
-pub fn run(primer_root: &Path, workspace_hint: &Path) -> Result<()> {
+pub fn run(workspace_hint: &Path) -> Result<()> {
     let state = state::load_from_workspace(workspace_hint)?;
-    let recipe = recipe::load_by_id(primer_root, &state.recipe_id)?;
+    let recipe = recipe::load_from_path(&state.recipe_path)?;
     let milestone = recipe::resolve_initial_milestone(&recipe, Some(&state.milestone_id))?;
-
-    if state.recipe_path != recipe.path {
-        bail!(
-            "workspace state points to {}, but resolved recipe is {}",
-            state.recipe_path.display(),
-            recipe.path.display()
-        );
-    }
 
     let milestone_dir = recipe.path.join("milestones").join(&milestone.id);
     let spec_path = milestone_dir.join("spec.md");

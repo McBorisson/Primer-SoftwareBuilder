@@ -64,6 +64,8 @@ primer completions fish
 
 If you installed with `cargo install --path .`, use `primer`. If you only built from source, replace `primer` below with `./target/release/primer`.
 
+The installed CLI includes the built-in recipe catalog, so you do not need to keep a cloned `primer` repo around just to use `primer list`, `primer init`, or `primer doctor`.
+
 List available recipes:
 
 ```bash
@@ -168,7 +170,6 @@ primer init operating-system --tool codex --track learner --path ../my-os
 
 For the current `operating-system` recipe, the important tools are:
 
-- `python3`: used by validation and adapter generation
 - `nasm`: required from milestone 01
 - `qemu-system-i386`: required to run and verify the OS image
 - `make`: required in the learner project workspace
@@ -222,8 +223,7 @@ This gives the agent a constrained problem and gives you a visible notion of pro
 - `src/`: Rust CLI implementation
 - `recipes/`: milestone contracts and recipe content
 - `adapters/_shared/`: shared skill behavior and state model
-- `scripts/`: validators and adapter generators
-- `tests/`: Python adapter/contract tests and Rust CLI workflow tests
+- `tests/`: Rust CLI and bundled-workflow tests
 - `recipe-spec.md`: canonical recipe contract for v0.1
 
 ## Contributing

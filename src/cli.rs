@@ -12,10 +12,9 @@ pub struct Cli {
         global = true,
         env = "PRIMER_ROOT",
         value_name = "PATH",
-        default_value = ".",
-        help = "Path to the Primer repository root"
+        help = "Optional path to an external Primer repository root"
     )]
-    pub primer_root: PathBuf,
+    pub primer_root: Option<PathBuf>,
 
     #[command(subcommand)]
     pub command: Commands,

@@ -102,7 +102,7 @@ pub fn display_recipe_table(recipes: &[RecipeSummary]) {
         Cell::new("Recipe").add_attribute(Attribute::Bold),
         Cell::new("Title").add_attribute(Attribute::Bold),
         Cell::new("Difficulty").add_attribute(Attribute::Bold),
-        Cell::new("Path").add_attribute(Attribute::Bold),
+        Cell::new("Source").add_attribute(Attribute::Bold),
     ]);
 
     for recipe in recipes {
@@ -110,7 +110,7 @@ pub fn display_recipe_table(recipes: &[RecipeSummary]) {
             Cell::new(&recipe.id).fg(Color::Cyan),
             Cell::new(&recipe.title),
             Cell::new(&recipe.difficulty).fg(difficulty_color(&recipe.difficulty)),
-            Cell::new(recipe.path.display().to_string()).fg(Color::DarkGrey),
+            Cell::new(&recipe.location).fg(Color::DarkGrey),
         ]);
     }
 

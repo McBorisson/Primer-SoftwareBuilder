@@ -1,12 +1,10 @@
-use anyhow::Result;
-use std::path::Path;
-
 use crate::recipe;
 use crate::ui;
+use anyhow::Result;
 
-pub fn run(primer_root: &Path) -> Result<()> {
+pub fn run(source: &recipe::RecipeSource) -> Result<()> {
     let spinner = ui::spinner("Scanning Primer recipes...");
-    let recipes = recipe::discover(primer_root)?;
+    let recipes = recipe::discover(source)?;
     spinner.finish_and_clear();
 
     if recipes.is_empty() {

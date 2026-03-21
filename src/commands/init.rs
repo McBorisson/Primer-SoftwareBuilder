@@ -1,27 +1,30 @@
-use anyhow::{Context, Result, bail};
+use anyhow::{Result, bail};
 use std::path::Path;
-use std::process::Command;
 
+use crate::adapter;
 use crate::cli::{InitArgs, Tool};
 use crate::recipe;
 use crate::ui;
+use crate::validation;
 use crate::workspace;
 
-pub fn run(primer_root: &Path, args: InitArgs) -> Result<()> {
-    let recipe = recipe::load_by_id(primer_root, &args.recipe_id)?;
+pub fn run(source: &recipe::RecipeSource, args: InitArgs) -> Result<()> {
+    let recipe = recipe::load_by_id(source, &args.recipe_id)?;
     let milestone = recipe::resolve_initial_milestone(&recipe, args.milestone.as_deref())?;
-    let workspace = workspace::prepare(primer_root, &args.path, args.force, args.dry_run)?;
+    let workspace = workspace::prepare(&args.path, args.force, args.dry_run)?;
 
     if args.dry_run {
         print_dry_run(&recipe, milestone.id.as_str(), &workspace.target_dir, &args);
         return Ok(());
     }
 
-    validate_recipe(primer_root, &recipe.path)?;
+    let recipe_snapshot =
+        recipe::materialize_into_workspace(source, &recipe.id, &workspace.target_dir)?;
+    validate_recipe(&recipe_snapshot)?;
     generate_adapter(
-        primer_root,
-        &recipe.path,
+        &recipe_snapshot,
         &workspace.target_dir,
+        &recipe,
         args.tool,
         args.track.as_str(),
         milestone.id.as_str(),
@@ -37,70 +40,35 @@ pub fn run(primer_root: &Path, args: InitArgs) -> Result<()> {
     Ok(())
 }
 
-fn validate_recipe(primer_root: &Path, recipe_dir: &Path) -> Result<()> {
+fn validate_recipe(recipe_dir: &Path) -> Result<()> {
     let spinner = ui::spinner("Validating recipe contract...");
-    let output = Command::new(primer_root.join("scripts/validate-recipe"))
-        .arg(recipe_dir)
-        .output()
-        .with_context(|| "failed to execute recipe validation".to_string())?;
+    let result = validation::validate_recipe(recipe_dir);
     spinner.finish_and_clear();
 
-    if !output.status.success() {
-        bail!(
-            "recipe validation failed:\n{}",
-            render_command_output(&output)
-        );
+    if let Err(err) = result {
+        bail!("recipe validation failed:\n{err}");
     }
 
     Ok(())
 }
 
 fn generate_adapter(
-    primer_root: &Path,
     recipe_dir: &Path,
     output_dir: &Path,
+    recipe: &recipe::Recipe,
     tool: Tool,
     track: &str,
     milestone_id: &str,
 ) -> Result<()> {
     let spinner = ui::spinner("Generating Primer adapter files...");
-    let script = match tool {
-        Tool::Codex => "generate-codex-adapter",
-        Tool::Claude => "generate-claude-adapter",
-    };
-
-    let output = Command::new(primer_root.join("scripts").join(script))
-        .arg(recipe_dir)
-        .arg("--output-dir")
-        .arg(output_dir)
-        .arg("--track")
-        .arg(track)
-        .arg("--milestone-id")
-        .arg(milestone_id)
-        .output()
-        .with_context(|| "failed to execute adapter generator".to_string())?;
+    let result = adapter::generate(recipe, recipe_dir, output_dir, tool, track, milestone_id);
     spinner.finish_and_clear();
 
-    if !output.status.success() {
-        bail!(
-            "adapter generation failed:\n{}",
-            render_command_output(&output)
-        );
+    if let Err(err) = result {
+        bail!("adapter generation failed:\n{err}");
     }
 
     Ok(())
-}
-
-fn render_command_output(output: &std::process::Output) -> String {
-    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-
-    match (stdout.is_empty(), stderr.is_empty()) {
-        (false, false) => format!("{stdout}\n{stderr}"),
-        (false, true) => stdout,
-        (true, false) => stderr,
-        (true, true) => format!("process exited with status {}", output.status),
-    }
 }
 
 fn print_dry_run(
