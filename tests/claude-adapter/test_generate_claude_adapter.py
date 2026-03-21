@@ -42,6 +42,7 @@ class ClaudeAdapterGenerationTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, msg=result.stderr)
 
             self.assertTrue((out / "CLAUDE.md").exists())
+            self.assertTrue((out / ".claude" / "commands" / "build.md").exists())
             self.assertTrue((out / ".claude" / "commands" / "next-milestone.md").exists())
             self.assertTrue((out / ".claude" / "commands" / "check.md").exists())
             self.assertTrue((out / ".claude" / "commands" / "explain.md").exists())
@@ -61,10 +62,13 @@ class ClaudeAdapterGenerationTests(unittest.TestCase):
             content = read(out / "CLAUDE.md")
             self.assertIn("primer_state:", content)
             self.assertIn("recipe_id: operating-system", content)
+            self.assertIn(f"recipe_path: {RECIPE_DIR.as_posix()}", content)
+            self.assertIn(f"workspace_root: {out.resolve().as_posix()}", content)
             self.assertIn("milestone_id: 01-bootloader", content)
+            self.assertIn("verified_milestone_id: null", content)
             self.assertIn("track: learner", content)
             self.assertIn("stack_id: c-x86", content)
-            self.assertIn("recipes/operating-system/", content)
+            self.assertIn("/build", content)
 
     def test_track_and_milestone_overrides(self) -> None:
         with tempfile.TemporaryDirectory(prefix="primer-claude-gen-") as tmp:
@@ -95,7 +99,7 @@ class ClaudeAdapterGenerationTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, msg=result.stderr)
 
-            for name in ["next-milestone.md", "check.md", "explain.md", "status.md"]:
+            for name in ["build.md", "next-milestone.md", "check.md", "explain.md", "status.md"]:
                 generated = read(out / ".claude" / "commands" / name)
                 shared = read(SHARED_DIR / name)
                 self.assertEqual(generated, shared, msg=f"mismatch in {name}")

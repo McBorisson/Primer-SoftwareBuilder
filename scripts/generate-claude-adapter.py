@@ -18,7 +18,7 @@ except Exception as exc:  # pragma: no cover
 
 ROOT = Path(__file__).resolve().parent.parent
 SHARED_DIR = ROOT / "adapters" / "_shared"
-REQUIRED_SHARED = ["next-milestone.md", "check.md", "explain.md", "status.md"]
+REQUIRED_SHARED = ["next-milestone.md", "check.md", "explain.md", "status.md", "build.md"]
 
 
 def load_yaml(path: Path) -> Any:
@@ -82,7 +82,8 @@ def render_claude_md(
     *,
     recipe_title: str,
     recipe_id: str,
-    recipe_rel: Path,
+    recipe_path: Path,
+    workspace_root: Path,
     milestone_id: str,
     track: str,
     stack_id: str,
@@ -92,25 +93,35 @@ def render_claude_md(
 ```yaml
 primer_state:
   recipe_id: {recipe_id}
+  recipe_path: {recipe_path.as_posix()}
+  workspace_root: {workspace_root.as_posix()}
   milestone_id: {milestone_id}
+  verified_milestone_id: null
   track: {track}
   stack_id: {stack_id}
 ```
 
 ## Recipe location
 
-{recipe_rel.as_posix()}/
+{recipe_path.as_posix()}/
+
+## Workspace root
+
+{workspace_root.as_posix()}/
 
 ## Rules
 
 - Always read the current milestone `agent.md` before starting work.
-- Always run current milestone `tests/check.sh` before declaring completion.
-- Never advance milestone state until verification and demo both pass.
+- Work in this project workspace, not in the `primer` repository.
+- Build the current milestone in small steps and do not implement future milestones early.
+- Run current milestone `tests/check.sh` before declaring completion.
+- Only run `/next-milestone` after `/check` has marked the current milestone as verified.
 - Use shared command contracts in `.claude/commands/` for behavior rules.
 
 ## Available commands
 
-- `/next-milestone` — verify current milestone and advance state
+- `/build` — implement the current milestone step by step
+- `/next-milestone` — advance state only after the milestone is already verified
 - `/check` — run current milestone checks
 - `/explain` — show current milestone explanation
 - `/status` — show current state and progress
@@ -132,11 +143,6 @@ def generate(recipe_dir: Path, output_dir: Path, track: str, milestone_id: str |
             f"{recipe_yaml}: milestone_id '{initial_milestone}' is not declared in milestones"
         )
 
-    try:
-        recipe_rel = recipe_dir.relative_to(output_dir)
-    except ValueError:
-        recipe_rel = recipe_dir
-
     claude_md = output_dir / "CLAUDE.md"
     commands_dir = output_dir / ".claude" / "commands"
     commands_dir.mkdir(parents=True, exist_ok=True)
@@ -145,7 +151,8 @@ def generate(recipe_dir: Path, output_dir: Path, track: str, milestone_id: str |
         render_claude_md(
             recipe_title=recipe_title,
             recipe_id=recipe_id,
-            recipe_rel=recipe_rel,
+            recipe_path=recipe_dir,
+            workspace_root=output_dir,
             milestone_id=initial_milestone,
             track=track,
             stack_id=stack_id,

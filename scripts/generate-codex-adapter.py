@@ -18,7 +18,7 @@ except Exception as exc:  # pragma: no cover
 
 ROOT = Path(__file__).resolve().parent.parent
 SHARED_DIR = ROOT / "adapters" / "_shared"
-REQUIRED_SHARED = ["next-milestone.md", "check.md", "explain.md", "status.md"]
+REQUIRED_SHARED = ["next-milestone.md", "check.md", "explain.md", "status.md", "build.md"]
 
 
 def load_yaml(path: Path) -> Any:
@@ -82,7 +82,8 @@ def render_agents_md(
     *,
     recipe_title: str,
     recipe_id: str,
-    recipe_rel: Path,
+    recipe_path: Path,
+    workspace_root: Path,
     milestone_id: str,
     track: str,
     stack_id: str,
@@ -92,24 +93,34 @@ def render_agents_md(
 ```yaml
 primer_state:
   recipe_id: {recipe_id}
+  recipe_path: {recipe_path.as_posix()}
+  workspace_root: {workspace_root.as_posix()}
   milestone_id: {milestone_id}
+  verified_milestone_id: null
   track: {track}
   stack_id: {stack_id}
 ```
 
 ## Recipe location
 
-{recipe_rel.as_posix()}/
+{recipe_path.as_posix()}/
+
+## Workspace root
+
+{workspace_root.as_posix()}/
 
 ## Behavior rules
 
 - Read current milestone `agent.md` before implementation.
+- Work in this project workspace, not in the `primer` repository.
+- Build the current milestone in small steps and do not implement future milestones early.
 - Run current milestone `tests/check.sh` before completion.
-- Do not advance milestone until check and demo both pass.
+- Only advance milestone state after `check` has marked the current milestone as verified.
 - Follow shared task definitions in `.codex/`.
 
 ## Available tasks
 
+- `.codex/build.md`
 - `.codex/next-milestone.md`
 - `.codex/check.md`
 - `.codex/explain.md`
@@ -132,11 +143,6 @@ def generate(recipe_dir: Path, output_dir: Path, track: str, milestone_id: str |
             f"{recipe_yaml}: milestone_id '{initial_milestone}' is not declared in milestones"
         )
 
-    try:
-        recipe_rel = recipe_dir.relative_to(output_dir)
-    except ValueError:
-        recipe_rel = recipe_dir
-
     agents_md = output_dir / "AGENTS.md"
     tasks_dir = output_dir / ".codex"
     tasks_dir.mkdir(parents=True, exist_ok=True)
@@ -145,7 +151,8 @@ def generate(recipe_dir: Path, output_dir: Path, track: str, milestone_id: str |
         render_agents_md(
             recipe_title=recipe_title,
             recipe_id=recipe_id,
-            recipe_rel=recipe_rel,
+            recipe_path=recipe_dir,
+            workspace_root=output_dir,
             milestone_id=initial_milestone,
             track=track,
             stack_id=stack_id,

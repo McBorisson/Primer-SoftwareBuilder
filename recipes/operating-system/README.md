@@ -6,6 +6,7 @@ This recipe takes you from a 512-byte bootloader to a minimal shell through 8 mi
 
 - [What you will build](#what-you-will-build)
 - [Prerequisites](#prerequisites)
+- [Why the project Makefile changes](#why-the-project-makefile-changes)
 - [How to start](#how-to-start)
 - [Milestones](#milestones)
 - [Recipe validation](#recipe-validation)
@@ -23,32 +24,58 @@ This recipe takes you from a 512-byte bootloader to a minimal shell through 8 mi
 
 ## Prerequisites
 
-- `nasm`
-- `gcc`
-- `qemu-system-i386`
-- `make`
+- `python3`: used by adapter generators and helper scripts
+- `nasm`: needed from milestone 01
+- `qemu-system-i386`: used to boot and verify the image
+- `make`: used in the learner project workspace
+- `i686-elf-gcc` and `i686-elf-ld`: needed from milestone 02 onward
+
+Notes:
+
+- Milestone 01 can be completed with `nasm`, `make`, and QEMU.
+- Milestone 02+ requires a real 32-bit bare-metal cross-compiler.
+- The milestone checks no longer require `timeout` or `gtimeout`; they fall back to `python3` if needed.
+
+## Why the project Makefile changes
+
+The `Makefile` is part of what the learner is building. It belongs in the learner project workspace because it defines how that project assembles, links, and runs.
+
+The `primer` repository should stay a recipe library. The learner's source files, build artifacts, and project `Makefile` should live in a separate target directory.
+
+That means updating the project `Makefile` is expected as the milestones grow. What should not happen is mixing those project build rules into the `primer` repo itself.
 
 ## How to start
 
-From repo root:
+From a separate target workspace:
 
 ```bash
-scripts/validate-recipe recipes/operating-system
-scripts/generate-claude-adapter recipes/operating-system --output-dir .
+PRIMER_ROOT=/path/to/primer
+mkdir -p ~/workspace/my-os
+cd ~/workspace/my-os
+"$PRIMER_ROOT/scripts/validate-recipe" "$PRIMER_ROOT/recipes/operating-system"
+"$PRIMER_ROOT/scripts/generate-claude-adapter" "$PRIMER_ROOT/recipes/operating-system" --output-dir .
 ```
 
 Or for Codex:
 
 ```bash
-scripts/generate-codex-adapter recipes/operating-system --output-dir .
+"$PRIMER_ROOT/scripts/generate-codex-adapter" "$PRIMER_ROOT/recipes/operating-system" --output-dir .
 ```
 
 Then in your AI tool, run milestone commands/tasks:
 
+- `build`
 - `status`
 - `check`
 - `explain`
 - `next-milestone`
+
+Recommended rhythm:
+
+1. Read the current milestone explanation and spec.
+2. Run `build` and implement only that milestone.
+3. Run `check` until it passes.
+4. Run `next-milestone` only after the milestone is verified.
 
 ## Milestones
 

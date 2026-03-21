@@ -36,7 +36,6 @@ Required top-level keys:
 - `title` (string)
 - `description` (string)
 - `difficulty` (`easy|medium|hard|expert`)
-- `estimated_hours` (number > 0)
 - `stack` (object)
 - `tracks` (object)
 - `milestones` (non-empty array)
@@ -92,4 +91,3 @@ scripts/validate-recipe recipes/<recipe-id>
 This runs:
 1. `recipe.yaml` schema validation
 2. Milestone structure validation
-

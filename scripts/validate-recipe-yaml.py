@@ -54,7 +54,6 @@ def validate(path: Path) -> list[str]:
         "title",
         "description",
         "difficulty",
-        "estimated_hours",
         "stack",
         "tracks",
         "milestones",
@@ -79,13 +78,6 @@ def validate(path: Path) -> list[str]:
                 f"must be one of {sorted(DIFFICULTY_VALUES)}",
             )
         )
-
-    estimated_hours = doc.get("estimated_hours")
-    if estimated_hours is not None:
-        if not isinstance(estimated_hours, (int, float)):
-            errs.append(error(path, "estimated_hours", "must be a number > 0"))
-        elif estimated_hours <= 0:
-            errs.append(error(path, "estimated_hours", "must be > 0"))
 
     stack = doc.get("stack")
     if stack is not None:

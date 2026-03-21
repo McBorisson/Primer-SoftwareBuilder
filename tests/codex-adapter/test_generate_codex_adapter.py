@@ -42,6 +42,7 @@ class CodexAdapterGenerationTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, msg=result.stderr)
 
             self.assertTrue((out / "AGENTS.md").exists())
+            self.assertTrue((out / ".codex" / "build.md").exists())
             self.assertTrue((out / ".codex" / "next-milestone.md").exists())
             self.assertTrue((out / ".codex" / "check.md").exists())
             self.assertTrue((out / ".codex" / "explain.md").exists())
@@ -61,10 +62,13 @@ class CodexAdapterGenerationTests(unittest.TestCase):
             content = read(out / "AGENTS.md")
             self.assertIn("primer_state:", content)
             self.assertIn("recipe_id: operating-system", content)
+            self.assertIn(f"recipe_path: {RECIPE_DIR.as_posix()}", content)
+            self.assertIn(f"workspace_root: {out.resolve().as_posix()}", content)
             self.assertIn("milestone_id: 01-bootloader", content)
+            self.assertIn("verified_milestone_id: null", content)
             self.assertIn("track: learner", content)
             self.assertIn("stack_id: c-x86", content)
-            self.assertIn("recipes/operating-system/", content)
+            self.assertIn(".codex/build.md", content)
 
     def test_track_and_milestone_overrides(self) -> None:
         with tempfile.TemporaryDirectory(prefix="primer-codex-gen-") as tmp:
@@ -95,7 +99,7 @@ class CodexAdapterGenerationTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, msg=result.stderr)
 
-            for name in ["next-milestone.md", "check.md", "explain.md", "status.md"]:
+            for name in ["build.md", "next-milestone.md", "check.md", "explain.md", "status.md"]:
                 generated = read(out / ".codex" / name)
                 shared = read(SHARED_DIR / name)
                 self.assertEqual(generated, shared, msg=f"mismatch in {name}")
@@ -138,7 +142,7 @@ class CodexAdapterGenerationTests(unittest.TestCase):
             )
             self.assertEqual(x_result.returncode, 0, msg=x_result.stderr)
 
-            for name in ["next-milestone.md", "check.md", "explain.md", "status.md"]:
+            for name in ["build.md", "next-milestone.md", "check.md", "explain.md", "status.md"]:
                 claude_cmd = read(out_claude / ".claude" / "commands" / name)
                 codex_cmd = read(out_codex / ".codex" / name)
                 self.assertEqual(claude_cmd, codex_cmd, msg=f"parity mismatch in {name}")

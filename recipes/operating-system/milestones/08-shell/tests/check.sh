@@ -21,7 +21,22 @@ run_with_timeout() {
     gtimeout "$seconds" "$@"
     return
   fi
-  fail "timeout/gtimeout is required to run QEMU checks."
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$seconds" "$@" <<'PY'
+import subprocess
+import sys
+
+timeout = float(sys.argv[1])
+cmd = sys.argv[2:]
+try:
+    completed = subprocess.run(cmd, timeout=timeout)
+    raise SystemExit(completed.returncode)
+except subprocess.TimeoutExpired:
+    raise SystemExit(124)
+PY
+    return
+  fi
+  fail "timeout, gtimeout, or python3 is required to run QEMU checks."
 }
 
 echo "▶ Checking dependencies..."

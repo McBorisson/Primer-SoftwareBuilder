@@ -13,9 +13,11 @@ Report current progress and next action.
 2. Resolve milestone index from `recipe.yaml`.
 3. Return:
   - recipe id
+  - workspace root
   - track
   - stack id
   - current milestone id and title
+  - whether current milestone is already verified
   - completed count and total count
   - next milestone id (or completion message if final)
 
