@@ -72,7 +72,10 @@ fn init_uses_bundled_recipe_without_external_repo() {
 
     let context =
         fs::read_to_string(workspace.join("AGENTS.md")).expect("failed to read AGENTS.md");
-    let recipe_snapshot = workspace.join(".primer/recipes/operating-system");
+    let recipe_snapshot = workspace
+        .join(".primer")
+        .join("recipes")
+        .join("operating-system");
     assert!(context.contains("recipe_id: operating-system"));
     assert!(context.contains(&format!("recipe_path: {}", recipe_snapshot.display())));
 }
