@@ -11,6 +11,22 @@ You pick a recipe, initialize a real project workspace, and then move through a 
 
 The current first-class recipe is `operating-system`: build your own x86 operating system from bootloader to shell.
 
+## Table of Contents
+
+- [Why Primer](#why-primer)
+- [Installation](#-installation)
+- [Tool Integration](#-tool-integration)
+- [Quickstart](#-quickstart)
+- [First Run](#-first-run)
+- [Core Commands](#-core-commands)
+- [Available Recipe](#available-recipe)
+- [Tracks](#tracks)
+- [Prerequisites](#prerequisites)
+- [Workspace Model](#workspace-model)
+- [Example Flow](#example-flow)
+- [Repository Layout](#repository-layout)
+- [Contributing](#-contributing)
+
 ## Why Primer
 
 Most AI coding workflows break down when the task is too large, too vague, or too easy to drift from.
@@ -26,7 +42,7 @@ The result is a workflow that feels closer to a guided lab than an open-ended pr
 
 Primer is also meant to become a community recipe library. If you want to contribute a new learning path, see [docs/community-recipes.md](docs/community-recipes.md).
 
-## Installation
+## 📦 Installation
 
 ### Quick install (macOS/Linux)
 
@@ -109,9 +125,46 @@ primer completions bash
 primer completions fish
 ```
 
-## Quickstart
+## 🤖 Tool Integration
 
-If you installed with `cargo install --path .`, use `primer`. If you only built from source, replace `primer` below with `./target/release/primer`.
+Primer currently supports two AI coding tools:
+
+- Claude Code
+- Codex
+
+`primer init` generates tool-specific files into the workspace so the workflow is available where the project work actually happens.
+
+### Claude Code
+
+Use:
+
+```bash
+primer init <recipe-id> --tool claude --path ~/projects/my-workspace
+```
+
+Primer generates:
+
+- `CLAUDE.md`
+- `.claude/commands/`
+
+These commands are thin wrappers around the Primer workflow, with the CLI acting as the source of truth for stateful actions such as `primer-check`, `primer-status`, and `primer-next-milestone`.
+
+### Codex
+
+Use:
+
+```bash
+primer init <recipe-id> --tool codex --path ~/projects/my-workspace
+```
+
+Primer generates:
+
+- `AGENTS.md`
+- `.agents/skills/`
+
+These skills expose the same Primer workflow inside Codex, including `primer-build`, `primer-check`, `primer-explain`, `primer-status`, and `primer-next-milestone`.
+
+## 🚀 Quickstart
 
 The installed CLI includes the built-in recipe catalog, so you do not need to keep a cloned `primer` repo around just to use `primer list`, `primer init`, or `primer doctor`.
 
@@ -124,7 +177,7 @@ primer list
 Create a workspace for the operating-system recipe:
 
 ```bash
-primer init operating-system --tool claude --path ../my-os
+primer init operating-system --tool claude --path ~/projects/my-os
 ```
 
 Check local dependencies for the first milestone:
@@ -158,7 +211,7 @@ Commands:
   completions     Generate shell completion scripts
 ```
 
-## First Run
+## 🧭 First Run
 
 The fastest path from zero to working milestone looks like this:
 
@@ -171,7 +224,7 @@ The fastest path from zero to working milestone looks like this:
 
 Primer creates a real project workspace. That workspace is where `Makefile`, source files, linker scripts, and milestone outputs live. The `primer` repository stays clean and acts as the recipe library plus workflow engine.
 
-## Core Commands
+## 🛠️ Core Commands
 
 The current CLI surface is:
 
@@ -212,7 +265,7 @@ Primer supports two tracks for each milestone:
 Choose the track at workspace initialization:
 
 ```bash
-primer init operating-system --tool codex --track learner --path ../my-os
+primer init operating-system --tool codex --track learner --path ~/projects/my-os
 ```
 
 ## Prerequisites
@@ -241,20 +294,6 @@ Primer uses two separate locations:
 
 Do not build inside the `primer` repo itself. `primer init` is designed to create or prepare a separate workspace for exactly this reason.
 
-## Tool Integration
-
-Primer currently supports:
-
-- Claude Code
-- Codex
-
-`primer init` generates the tool-specific files for the workspace:
-
-- `CLAUDE.md` plus `.claude/commands/` for Claude Code
-- `AGENTS.md` plus `.agents/skills/` for Codex
-
-Those generated actions are thin wrappers around the Primer workflow.
-
 ## Example Flow
 
 Here is the intended day-to-day loop from inside a workspace:
@@ -275,7 +314,7 @@ This gives the agent a constrained problem and gives you a visible notion of pro
 - `tests/`: Rust CLI and bundled-workflow tests
 - `recipe-spec.md`: canonical recipe contract for v0.1
 
-## Contributing
+## 🤝 Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contributor checks, quality gates, adapter standards, and test requirements.
 
