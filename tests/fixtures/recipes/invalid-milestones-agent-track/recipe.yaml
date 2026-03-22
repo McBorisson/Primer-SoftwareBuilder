@@ -1,0 +1,20 @@
+id: invalid-agent-track
+title: Invalid Agent Track
+description: Fixture with malformed milestone agent instructions.
+difficulty: easy
+stack:
+  id: test-stack
+  label: Test Stack
+  tools:
+    - bash
+tracks:
+  learner:
+    description: Teaches while building.
+  builder:
+    description: Implements directly.
+milestones:
+  - id: 01-start
+    title: Start
+    demo: Prints start marker.
+    prerequisites:
+      - bash

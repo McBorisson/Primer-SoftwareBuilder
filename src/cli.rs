@@ -98,6 +98,7 @@ pub struct DoctorArgs {
 pub enum Tool {
     Codex,
     Claude,
+    Cursor,
     Gemini,
     Opencode,
 }
@@ -107,6 +108,7 @@ impl Tool {
         match self {
             Tool::Codex => "Codex",
             Tool::Claude => "Claude Code",
+            Tool::Cursor => "Cursor",
             Tool::Gemini => "Gemini CLI",
             Tool::Opencode => "OpenCode",
         }

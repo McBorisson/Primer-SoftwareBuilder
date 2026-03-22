@@ -194,6 +194,19 @@ fn print_success(
                 ),
             ]
         }
+        Tool::Cursor => {
+            vec![
+                format!(
+                    "Open {} in Cursor",
+                    ui::code(workspace.target_dir.display().to_string())
+                ),
+                format!("Run the {}", ui::reference("skill", "primer-build")),
+                format!(
+                    "Use the {} when the milestone is complete",
+                    ui::reference("skill", "primer-check")
+                ),
+            ]
+        }
         Tool::Opencode => {
             vec![
                 format!(

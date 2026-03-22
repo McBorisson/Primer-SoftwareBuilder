@@ -6,19 +6,12 @@ use crate::bundled;
 use crate::cli::Tool;
 use crate::recipe::Recipe;
 
-const CODEX_SKILL_FILES: &[&str] = &[
+const PRIMER_WORKFLOW_FILES: &[&str] = &[
     "build.md",
     "check.md",
     "explain.md",
     "status.md",
     "next-milestone.md",
-];
-const CLAUDE_COMMAND_FILES: &[&str] = &[
-    "next-milestone.md",
-    "check.md",
-    "explain.md",
-    "status.md",
-    "build.md",
 ];
 
 pub fn generate(
@@ -33,6 +26,7 @@ pub fn generate(
     match tool {
         Tool::Codex => generate_codex(recipe, recipe_path, output_dir, track, milestone_id),
         Tool::Claude => generate_claude(recipe, recipe_path, output_dir, track, milestone_id),
+        Tool::Cursor => generate_cursor(recipe, recipe_path, output_dir, track, milestone_id),
         Tool::Gemini => generate_gemini(recipe, recipe_path, output_dir, track, milestone_id),
         Tool::Opencode => generate_opencode(recipe, recipe_path, output_dir, track, milestone_id),
     }
@@ -69,7 +63,7 @@ fn generate_codex(
         render_adapter_context(recipe, recipe_path, output_dir, track, milestone_id),
     )?;
 
-    for filename in CODEX_SKILL_FILES {
+    for filename in PRIMER_WORKFLOW_FILES {
         let shared_body = bundled::require_shared_contract(filename)?;
         let command_name = filename.trim_end_matches(".md");
         let skill_name = format!("primer-{command_name}");
@@ -132,7 +126,7 @@ fn generate_claude(
         render_adapter_context(recipe, recipe_path, output_dir, track, milestone_id),
     )?;
 
-    for filename in CLAUDE_COMMAND_FILES {
+    for filename in PRIMER_WORKFLOW_FILES {
         let shared_body = bundled::require_shared_contract(filename)?;
         let command_name = filename.trim_end_matches(".md");
         let target_name = format!("primer-{command_name}.md");
@@ -165,7 +159,7 @@ fn generate_opencode(
         render_adapter_context(recipe, recipe_path, output_dir, track, milestone_id),
     )?;
 
-    for filename in CODEX_SKILL_FILES {
+    for filename in PRIMER_WORKFLOW_FILES {
         let shared_body = bundled::require_shared_contract(filename)?;
         let command_name = filename.trim_end_matches(".md");
         let skill_name = format!("primer-{command_name}");
@@ -196,6 +190,53 @@ fn generate_opencode(
     Ok(())
 }
 
+fn generate_cursor(
+    recipe: &Recipe,
+    recipe_path: &Path,
+    output_dir: &Path,
+    track: &str,
+    milestone_id: &str,
+) -> Result<()> {
+    let agents_md = output_dir.join("AGENTS.md");
+    let skills_root = output_dir.join(".cursor").join("skills");
+    fs::create_dir_all(&skills_root)?;
+
+    fs::write(
+        &agents_md,
+        render_adapter_context(recipe, recipe_path, output_dir, track, milestone_id),
+    )?;
+
+    for filename in PRIMER_WORKFLOW_FILES {
+        let shared_body = bundled::require_shared_contract(filename)?;
+        let command_name = filename.trim_end_matches(".md");
+        let skill_name = format!("primer-{command_name}");
+        let skill_dir = skills_root.join(&skill_name);
+        fs::create_dir_all(&skill_dir)?;
+
+        let body = match command_name {
+            "check" | "explain" | "status" | "next-milestone" => {
+                render_cli_backed_skill_body(command_name, shared_body)
+            }
+            "build" => render_build_skill_body(shared_body),
+            _ => shared_body.to_string(),
+        };
+
+        fs::write(
+            skill_dir.join("SKILL.md"),
+            render_skill_md(
+                &skill_name,
+                &format!(
+                    "Use when the user wants to {} for the current Primer recipe in this repo workspace.",
+                    command_name.replace('-', " ")
+                ),
+                &body,
+            ),
+        )?;
+    }
+
+    Ok(())
+}
+
 fn generate_gemini(
     recipe: &Recipe,
     recipe_path: &Path,
@@ -212,7 +253,7 @@ fn generate_gemini(
         render_adapter_context(recipe, recipe_path, output_dir, track, milestone_id),
     )?;
 
-    for filename in CODEX_SKILL_FILES {
+    for filename in PRIMER_WORKFLOW_FILES {
         let shared_body = bundled::require_shared_contract(filename)?;
         let command_name = filename.trim_end_matches(".md");
         let skill_name = format!("primer-{command_name}");
@@ -251,7 +292,7 @@ fn render_adapter_context(
     milestone_id: &str,
 ) -> String {
     format!(
-        "# Primer — {}\n\n```yaml\nprimer_state:\n  recipe_id: {}\n  recipe_path: {}\n  workspace_root: {}\n  milestone_id: {}\n  verified_milestone_id: null\n  track: {}\n  stack_id: {}\n```\n\n## Recipe location\n\n{}/\n\n## Workspace root\n\n{}/\n\n## Rules\n\n- Always read the current milestone `agent.md` before starting work.\n- Work in this project workspace, not in the `primer` repository.\n- Build the current milestone in small steps and do not implement future milestones early.\n- Run current milestone `tests/check.sh` before declaring completion.\n- Only run `primer-next-milestone` after `primer-check` has marked the current milestone as verified.\n- Use the local `primer` CLI as the source of truth for `primer-check`, `primer-status`, `primer-explain`, and `primer-next-milestone`.\n- Use the generated Primer workflow actions for behavior rules.\n\n## Available workflow actions\n\n- `primer-build` — implement the current milestone step by step\n- `primer-next-milestone` — advance state only after the milestone is already verified\n- `primer-check` — run current milestone checks\n- `primer-explain` — show current milestone explanation\n- `primer-status` — show current state and progress\n",
+        "# Primer — {}\n\n```yaml\nprimer_state:\n  recipe_id: {}\n  recipe_path: {}\n  workspace_root: {}\n  milestone_id: {}\n  verified_milestone_id: null\n  track: {}\n  stack_id: {}\n```\n\n## Recipe location\n\n{}/\n\n## Workspace root\n\n{}/\n\n## Rules\n\n- Always read the current milestone `agent.md` before starting work.\n- Work in this project workspace, not in the `primer` repository.\n- Build the current milestone in small steps and do not implement future milestones early.\n- Run current milestone `tests/check.sh` before declaring completion.\n- Only run `primer-next-milestone` after `primer-check` has marked the current milestone as verified.\n- Use the local `primer` CLI as the source of truth for `primer-check`, `primer-status`, `primer-explain`, and `primer-next-milestone`.\n- Use the generated Primer workflow actions for behavior rules.\n\n## Track Invariants\n\n{}\n\n## Available workflow actions\n\n- `primer-build` — implement the current milestone step by step\n- `primer-next-milestone` — advance state only after the milestone is already verified\n- `primer-check` — run current milestone checks\n- `primer-explain` — show current milestone explanation\n- `primer-status` — show current state and progress\n",
         recipe.title,
         recipe.id,
         recipe_path.display(),
@@ -260,7 +301,8 @@ fn render_adapter_context(
         track,
         recipe.stack_id,
         recipe_path.display(),
-        workspace_root.display()
+        workspace_root.display(),
+        render_track_invariants(track)
     )
 }
 
@@ -282,26 +324,38 @@ fn render_openai_yaml(display_name: &str, short_description: &str, default_promp
 
 fn render_cli_backed_skill_body(command_name: &str, shared_body: &str) -> String {
     format!(
-        "Use the local Primer CLI as the source of truth for this workflow action.\n\n## Required action\n\n1. Run `primer {command_name}` from the current workspace root.\n2. Return the CLI output to the user faithfully.\n3. Do not manually edit `primer_state`; the CLI owns state transitions for this skill.\n4. If the `primer` executable is unavailable, stop and tell the user to install or build the Primer CLI.\n\n## Shared contract reference\n\n{shared_body}\n"
+        "Use the local Primer CLI as the source of truth for this workflow action.\n\n## Active track rules\n\n- Respect the current `track` from `primer_state`.\n- In learner track, teach in small steps, explain before coding, ask at least one question before major implementation, and pause for understanding at natural checkpoints.\n- In builder track, implement directly, keep commentary minimal, and stay focused on the smallest complete change.\n\n## Required action\n\n1. Run `primer {command_name}` from the current workspace root.\n2. Return the CLI output to the user faithfully.\n3. Do not manually edit `primer_state`; the CLI owns state transitions for this skill.\n4. If the `primer` executable is unavailable, stop and tell the user to install or build the Primer CLI.\n\n## Shared contract reference\n\n{shared_body}\n"
     )
 }
 
 fn render_build_skill_body(shared_body: &str) -> String {
     format!(
-        "Use the local Primer CLI to load the current milestone spec and track guidance before making changes.\n\n## Required action\n\n1. Run `primer build` from the current workspace root.\n2. Use that output as the current milestone contract and active track guidance.\n3. Then implement only the current milestone scope in the workspace.\n4. Recommend running `primer-check` when the milestone is complete.\n\n## Shared contract reference\n\n{shared_body}\n"
+        "Use the local Primer CLI to load the current milestone spec and track guidance before making changes.\n\n## Active track rules\n\n- Respect the current `track` from `primer_state`.\n- In learner track, use a teacher-student style: explain before coding, move in small steps, ask at least one question before major implementation, and check understanding before advancing.\n- In builder track, implement directly, keep commentary minimal, and focus on the smallest milestone-completing change.\n\n## Required action\n\n1. Run `primer build` from the current workspace root.\n2. Use that output as the current milestone contract and active track guidance.\n3. Then implement only the current milestone scope in the workspace.\n4. Recommend running `primer-check` when the milestone is complete.\n\n## Shared contract reference\n\n{shared_body}\n"
     )
 }
 
 fn render_cli_backed_claude_command(command_name: &str, shared_body: &str) -> String {
     format!(
-        "# Primer Skill: `primer-{command_name}`\n\nUse the local Primer CLI as the source of truth for this workflow action.\n\n## Required action\n\n1. Run `primer {command_name}` from the current workspace root.\n2. Return the CLI output to the user faithfully.\n3. Do not manually edit `primer_state`; the CLI owns state transitions for this skill.\n4. If the `primer` executable is unavailable, stop and tell the user to install or build the Primer CLI.\n\n## Shared contract reference\n\n{shared_body}\n"
+        "# Primer Skill: `primer-{command_name}`\n\nUse the local Primer CLI as the source of truth for this workflow action.\n\n## Active track rules\n\n- Respect the current `track` from `primer_state`.\n- In learner track, teach in small steps, explain before coding, ask at least one question before major implementation, and pause for understanding at natural checkpoints.\n- In builder track, implement directly, keep commentary minimal, and stay focused on the smallest complete change.\n\n## Required action\n\n1. Run `primer {command_name}` from the current workspace root.\n2. Return the CLI output to the user faithfully.\n3. Do not manually edit `primer_state`; the CLI owns state transitions for this skill.\n4. If the `primer` executable is unavailable, stop and tell the user to install or build the Primer CLI.\n\n## Shared contract reference\n\n{shared_body}\n"
     )
 }
 
 fn render_build_claude_command(shared_body: &str) -> String {
     format!(
-        "# Primer Skill: `primer-build`\n\nUse the local Primer CLI to load the current milestone spec and track guidance before making changes.\n\n## Required action\n\n1. Run `primer build` from the current workspace root.\n2. Use that output as the current milestone contract and active track guidance.\n3. Then implement only the current milestone scope in the workspace.\n4. Recommend running `primer-check` when the milestone is complete.\n\n## Shared contract reference\n\n{shared_body}\n"
+        "# Primer Skill: `primer-build`\n\nUse the local Primer CLI to load the current milestone spec and track guidance before making changes.\n\n## Active track rules\n\n- Respect the current `track` from `primer_state`.\n- In learner track, use a teacher-student style: explain before coding, move in small steps, ask at least one question before major implementation, and check understanding before advancing.\n- In builder track, implement directly, keep commentary minimal, and focus on the smallest milestone-completing change.\n\n## Required action\n\n1. Run `primer build` from the current workspace root.\n2. Use that output as the current milestone contract and active track guidance.\n3. Then implement only the current milestone scope in the workspace.\n4. Recommend running `primer-check` when the milestone is complete.\n\n## Shared contract reference\n\n{shared_body}\n"
     )
+}
+
+fn render_track_invariants(track: &str) -> &'static str {
+    match track {
+        "learner" => {
+            "- Use a teacher-student style by default.\n- Explain the goal of each small step before changing code.\n- Ask at least one question before major implementation work begins.\n- Pause at natural checkpoints and confirm understanding before moving on.\n- Prefer incremental changes over large jumps."
+        }
+        "builder" => {
+            "- Implement directly and keep commentary minimal unless the user asks for more detail.\n- Prefer the smallest complete change that advances the milestone.\n- Stay tightly scoped to the current milestone contract."
+        }
+        _ => "- Respect the active track from `primer_state`.",
+    }
 }
 
 fn capitalize(value: &str) -> String {
@@ -460,6 +514,37 @@ mod tests {
         assert!(context.contains("milestone_id: 01-bootloader"));
 
         let skill = read(&out.join(".gemini/skills/primer-build/SKILL.md"));
+        assert!(skill.contains("name: primer-build"));
+        assert!(skill.contains("description:"));
+    }
+
+    #[test]
+    fn cursor_generation_creates_expected_files() {
+        let source = RecipeSource::Bundled;
+        let recipe = recipe::load_by_id(&source, "operating-system").expect("recipe should load");
+        let out = temp_dir("cursor-gen");
+        let recipe_path = recipe::materialize_into_workspace(&source, "operating-system", &out)
+            .expect("recipe materialization should succeed");
+
+        generate(
+            &recipe,
+            &recipe_path,
+            &out,
+            Tool::Cursor,
+            "learner",
+            "01-bootloader",
+        )
+        .expect("adapter generation should succeed");
+
+        assert!(out.join("AGENTS.md").exists());
+        assert!(out.join(".cursor/skills/primer-build/SKILL.md").exists());
+        assert!(out.join(".cursor/skills/primer-check/SKILL.md").exists());
+
+        let context = read(&out.join("AGENTS.md"));
+        assert!(context.contains("recipe_id: operating-system"));
+        assert!(context.contains("milestone_id: 01-bootloader"));
+
+        let skill = read(&out.join(".cursor/skills/primer-build/SKILL.md"));
         assert!(skill.contains("name: primer-build"));
         assert!(skill.contains("description:"));
     }

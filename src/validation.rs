@@ -363,6 +363,22 @@ pub fn validate_milestones(recipe_target: &Path) -> Vec<String> {
                 errors.push(error(&path, "required-file", "missing"));
             }
         }
+
+        let agent_path = milestone_dir.join("agent.md");
+        if agent_path.is_file() {
+            let agent = match fs::read_to_string(&agent_path) {
+                Ok(agent) => agent,
+                Err(err) => {
+                    errors.push(error(
+                        &agent_path,
+                        "agent.md",
+                        &format!("failed to read file: {err}"),
+                    ));
+                    continue;
+                }
+            };
+            validate_agent_instructions(&agent_path, &agent, &mut errors);
+        }
     }
 
     let actual_dirs = match fs::read_dir(&milestones_root) {
@@ -395,6 +411,74 @@ pub fn validate_milestones(recipe_target: &Path) -> Vec<String> {
     }
 
     errors
+}
+
+fn validate_agent_instructions(agent_path: &Path, agent_markdown: &str, errors: &mut Vec<String>) {
+    let Some(learner) = extract_track_section(agent_markdown, "## Learner Track") else {
+        errors.push(error(
+            agent_path,
+            "agent.md",
+            "missing '## Learner Track' section",
+        ));
+        return;
+    };
+    let Some(builder) = extract_track_section(agent_markdown, "## Builder Track") else {
+        errors.push(error(
+            agent_path,
+            "agent.md",
+            "missing '## Builder Track' section",
+        ));
+        return;
+    };
+
+    let learner_lower = learner.to_ascii_lowercase();
+    if !learner.contains('?') {
+        errors.push(error(
+            agent_path,
+            "agent.md",
+            "learner track must include at least one explicit question",
+        ));
+    }
+    if !learner_lower.contains("explain") {
+        errors.push(error(
+            agent_path,
+            "agent.md",
+            "learner track must require explanation before or during implementation",
+        ));
+    }
+    if !(learner_lower.contains("ask") || learner_lower.contains("question")) {
+        errors.push(error(
+            agent_path,
+            "agent.md",
+            "learner track must instruct the agent to ask the learner a question",
+        ));
+    }
+    let builder_lower = builder.to_ascii_lowercase();
+    if !builder_lower.contains("implement") {
+        errors.push(error(
+            agent_path,
+            "agent.md",
+            "builder track must instruct the agent to implement directly",
+        ));
+    }
+    if !builder_lower.contains("check") {
+        errors.push(error(
+            agent_path,
+            "agent.md",
+            "builder track must require running milestone checks",
+        ));
+    }
+}
+
+fn extract_track_section<'a>(markdown: &'a str, heading: &str) -> Option<&'a str> {
+    let start = markdown.find(heading)?;
+    let rest = &markdown[start..];
+    let end = rest
+        .match_indices("\n## ")
+        .map(|(index, _)| index)
+        .find(|index| *index > 0)
+        .unwrap_or(rest.len());
+    Some(rest[..end].trim())
 }
 
 fn validate_string_array(
@@ -509,6 +593,21 @@ mod tests {
         let errors = validate_milestones(&fixture("invalid-milestones-missing-file"));
         assert!(errors.iter().any(|error| error.contains("demo.sh")));
         assert!(errors.iter().any(|error| error.contains("missing")));
+    }
+
+    #[test]
+    fn milestone_validator_rejects_invalid_agent_track_structure() {
+        let errors = validate_milestones(&fixture("invalid-milestones-agent-track"));
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("explicit question"))
+        );
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("running milestone checks"))
+        );
     }
 
     #[test]

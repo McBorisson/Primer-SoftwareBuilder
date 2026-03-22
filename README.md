@@ -16,6 +16,11 @@ The current first-class recipe is `operating-system`: build your own x86 operati
 - [Why Primer](#why-primer)
 - [Installation](#-installation)
 - [Tool Integration](#-tool-integration)
+  - [Claude Code](#claude-code)
+  - [Codex](#codex)
+  - [OpenCode](#opencode)
+  - [Gemini CLI](#gemini-cli)
+  - [Cursor](#cursor)
 - [Quickstart](#-quickstart)
 - [First Run](#-first-run)
 - [Core Commands](#-core-commands)
@@ -127,14 +132,47 @@ primer completions fish
 
 ## 🤖 Tool Integration
 
-Primer currently supports four AI coding tools:
+Primer has native workspace adapters for:
 
-- OpenCode
-- Gemini CLI
 - Claude Code
 - Codex
+- OpenCode
+- Gemini CLI
+- Cursor
+
+It can also work with other agents as long as they can follow the generated workspace instructions and call the local `primer` CLI when needed.
 
 `primer init` generates tool-specific files into the workspace so the workflow is available where the project work actually happens.
+
+### Claude Code
+
+Use:
+
+```bash
+primer init <recipe-id> --tool claude --path ~/projects/my-workspace
+```
+
+Primer generates:
+
+- `CLAUDE.md`
+- `.claude/commands/`
+
+These commands are thin wrappers around the Primer workflow, with the CLI acting as the source of truth for stateful actions such as `primer-check`, `primer-status`, and `primer-next-milestone`.
+
+### Codex
+
+Use:
+
+```bash
+primer init <recipe-id> --tool codex --path ~/projects/my-workspace
+```
+
+Primer generates:
+
+- `AGENTS.md`
+- `.agents/skills/`
+
+These skills expose the same Primer workflow inside Codex, including `primer-build`, `primer-check`, `primer-explain`, `primer-status`, and `primer-next-milestone`.
 
 ### OpenCode
 
@@ -166,35 +204,20 @@ Primer generates:
 
 Gemini CLI loads `GEMINI.md` as project context and discovers the generated Primer skills from `.gemini/skills/`.
 
-### Claude Code
+### Cursor
 
 Use:
 
 ```bash
-primer init <recipe-id> --tool claude --path ~/projects/my-workspace
-```
-
-Primer generates:
-
-- `CLAUDE.md`
-- `.claude/commands/`
-
-These commands are thin wrappers around the Primer workflow, with the CLI acting as the source of truth for stateful actions such as `primer-check`, `primer-status`, and `primer-next-milestone`.
-
-### Codex
-
-Use:
-
-```bash
-primer init <recipe-id> --tool codex --path ~/projects/my-workspace
+primer init <recipe-id> --tool cursor --path ~/projects/my-workspace
 ```
 
 Primer generates:
 
 - `AGENTS.md`
-- `.agents/skills/`
+- `.cursor/skills/`
 
-These skills expose the same Primer workflow inside Codex, including `primer-build`, `primer-check`, `primer-explain`, `primer-status`, and `primer-next-milestone`.
+Cursor reads `AGENTS.md` as project-level agent instructions and discovers the generated Primer skills from `.cursor/skills/`.
 
 ## 🚀 Quickstart
 
@@ -249,7 +272,7 @@ The fastest path from zero to working milestone looks like this:
 
 1. Run `primer init` to create a separate learner workspace.
 2. Run `primer doctor` to see what tools are missing before you start.
-3. Open that workspace in OpenCode, Gemini CLI, Claude Code, or Codex.
+3. Open that workspace in Claude Code, Codex, OpenCode, Gemini CLI, Cursor, or another compatible agent.
 4. Run the `primer-build` skill to load the current milestone contract and start implementing.
 5. Run the `primer-check` skill when you think the milestone is done.
 6. Run the `primer-next-milestone` skill only after the check passes.
@@ -277,7 +300,7 @@ The CLI is the source of truth for deterministic workflow actions:
 - `primer-explain`
 - `primer-next-milestone`
 
-Generated OpenCode, Gemini, Claude, and Codex skills call into the CLI for those actions. `primer-build` stays agent-native, but uses `primer build` to load the current milestone contract first.
+Generated Claude, Codex, OpenCode, Gemini, and Cursor skills call into the CLI for those actions. `primer-build` stays agent-native, but uses `primer build` to load the current milestone contract first.
 
 ## Available Recipe
 
@@ -291,13 +314,21 @@ Current catalog:
 
 Primer supports two tracks for each milestone:
 
-- `learner`: explain the step, ask at least one question, and teach while building
-- `builder`: implement directly with minimal commentary
+- `learner`: the default track; explain the step, ask at least one question, and teach while building
+- `builder`: opt-in track; implement directly with minimal commentary
 
-Choose the track at workspace initialization:
+If you do not pass `--track`, Primer uses `learner`.
+
+Choose the track explicitly at workspace initialization when you want a different interaction style:
 
 ```bash
 primer init operating-system --tool codex --track learner --path ~/projects/my-os
+```
+
+For direct execution with less teaching-oriented guidance:
+
+```bash
+primer init operating-system --tool codex --track builder --path ~/projects/my-os
 ```
 
 ## Prerequisites
