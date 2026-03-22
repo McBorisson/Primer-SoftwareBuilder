@@ -1,55 +1,151 @@
 # Primer
 
-Primer is a toolkit for learning and building substantial software projects with AI coding agents, one milestone at a time.
+Primer is a guided workflow for learning and building real software projects with AI coding agents, one milestone at a time.
 
-You pick a recipe, initialize a real project workspace, and then move through a tight loop:
+The main work happens inside your AI coding agent. The `primer` CLI sets up the workspace, checks prerequisites, and powers the workflow under the hood.
 
-1. read the current milestone
-2. build only that scope
-3. run verification
-4. advance only after it passes
+Instead of handing an agent a huge vague task, Primer gives you a smaller contract, a way to verify it, and a clear next step.
 
-The current first-class recipe is `operating-system`: build your own x86 operating system from bootloader to shell.
+Primer is a good fit if you want to:
+
+- start from a real workspace instead of a blank prompt
+- keep the agent focused on the current step
+- verify progress before moving on
+- learn the system as you build it
+
+Current first-class recipe:
+
+- `operating-system`: build an x86 operating system from bootloader to shell
 
 ## Table of Contents
 
+- [Start Here](#start-here)
+- [How Primer Works](#how-primer-works)
 - [Why Primer](#why-primer)
-- [Installation](#-installation)
-- [Tool Integration](#-tool-integration)
-  - [Claude Code](#claude-code)
-  - [Codex](#codex)
-  - [OpenCode](#opencode)
-  - [Gemini CLI](#gemini-cli)
-  - [Cursor](#cursor)
-- [Quickstart](#-quickstart)
-- [First Run](#-first-run)
-- [Core Commands](#-core-commands)
+- [Is Primer Beginner-Friendly?](#is-primer-beginner-friendly)
+- [Who It's For](#who-its-for)
+- [Installation](#installation)
+  - [Recommended quick install (macOS/Linux)](#recommended-quick-install-macoslinux)
+  - [Homebrew (macOS/Linux)](#homebrew-macoslinux)
+  - [npm / npx](#npm--npx)
+  - [Cargo](#cargo)
+  - [Native binaries](#native-binaries)
+  - [Build from source](#build-from-source)
+  - [Install from local source](#install-from-local-source)
+  - [Sanity check after install](#sanity-check-after-install)
+  - [Shell completions](#shell-completions)
+- [AI Tool Integration](#ai-tool-integration)
 - [Available Recipe](#available-recipe)
 - [Tracks](#tracks)
-- [Prerequisites](#prerequisites)
+- [Agent Workflow Actions](#agent-workflow-actions)
+- [CLI Setup Commands](#cli-setup-commands)
 - [Workspace Model](#workspace-model)
-- [Example Flow](#example-flow)
-- [Repository Layout](#repository-layout)
-- [Contributing](#-contributing)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Start Here
+
+If you want the fastest path from zero to building inside your AI coding agent:
+
+```bash
+primer list
+primer init operating-system --tool codex --track learner --path ~/projects/my-os
+cd ~/projects/my-os
+primer doctor operating-system --milestone 01-bootloader
+```
+
+Use the terminal for setup:
+
+1. `primer list` shows the catalog.
+2. `primer init` creates a separate project workspace and generates AI-tool instructions for it.
+3. `primer doctor` checks whether your local toolchain is ready for the first milestone.
+
+Then open the generated workspace in your AI coding agent and use the Primer workflow actions there:
+
+- `primer-build`: implement only the current milestone scope
+- `primer-check`: run milestone verification and mark it verified on success
+- `primer-next-milestone`: unlock the next milestone only after verification passes
+- `primer-explain`: show the deeper explanation for the current milestone
+- `primer-status`: show current milestone, verification state, and progress
+
+Primer is designed so that:
+
+- In a regular shell, you mainly use `primer` for setup, diagnostics, and utilities such as `init`, `doctor`, and `completions`.
+- Inside a generated workspace in a supported AI tool, you do the actual milestone work through generated actions such as `primer-build` and `primer-status`.
+
+If you are new to Primer, start with `--track learner`.
+
+## How Primer Works
+
+Primer has two layers:
+
+1. The setup layer: the `primer` CLI creates the workspace, checks your environment, and manages workflow state.
+2. The working layer: your AI coding agent uses the generated Primer actions inside that workspace while you build milestone by milestone.
+
+In practice, that means:
+
+- you touch the terminal first to initialize the workspace
+- you spend most of your time inside the AI coding agent
+- Primer verification decides when a milestone is actually complete
+
+The CLI is important infrastructure, but it is not meant to be the primary day-to-day interface.
 
 ## Why Primer
 
-Most AI coding workflows break down when the task is too large, too vague, or too easy to drift from.
+Most AI coding workflows fail in predictable ways:
 
-Primer fixes that by giving the agent:
+- the task is too broad
+- the agent implements future steps too early
+- there is no reliable check for "done"
+- progress is hard to see
 
-- a concrete milestone contract
-- a verification script for the current step
-- a clear notion of what comes next
-- a learner track and a builder track
+Primer turns that into a repeatable loop:
 
-The result is a workflow that feels closer to a guided lab than an open-ended prompt.
+1. Initialize a separate project workspace from a recipe.
+2. Load the current milestone contract.
+3. Build only that scope.
+4. Run verification.
+5. Advance only after it passes.
 
-Primer is also meant to become a community recipe library. If you want to contribute a new learning path, see [docs/community-recipes.md](docs/community-recipes.md).
+The result feels closer to a guided lab than an open-ended prompt.
 
-## 📦 Installation
+## Is Primer Beginner-Friendly?
 
-### Quick install (macOS/Linux)
+The workflow is beginner-friendly. The current recipe catalog is not beginner-easy yet.
+
+That distinction matters:
+
+- Primer itself is designed to be approachable for students, entry-level developers, and people learning with AI assistance.
+- The current flagship recipe, `operating-system`, is still a hard systems project with a real toolchain and low-level concepts.
+
+If you are a beginner or novice, the recommended path is:
+
+- use `--track learner`
+- start at the default first milestone
+- run `primer doctor` early so tooling issues are obvious
+- use `primer explain` and `primer check` as part of every milestone
+- expect to learn incrementally instead of understanding the entire system up front
+
+If you are completely new to programming, Primer can still be useful as a guided environment, but the current recipe will likely feel ambitious. The workflow is accessible today; the recipe catalog still needs more beginner-depth content over time.
+
+## Who It's For
+
+Primer is for people who want structure while building with AI tools:
+
+- learners who want explanations, checkpoints, and visible progress
+- builders who want tighter scope control and safer iteration
+- educators and recipe authors who want reusable milestone-based learning paths
+
+If you want to try ambitious projects without handing the whole problem to the agent at once, Primer is the point.
+
+Primer is also meant to grow into a community library of guided labs. If you want to help create new recipes or improve the educational experience around existing ones, see [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/community-recipes.md](docs/community-recipes.md).
+
+## Installation
+
+Pick one installation path. You install the `primer` CLI because it bootstraps and supports the agent workflow.
+
+### Recommended quick install (macOS/Linux)
 
 ```bash
 curl -sSf https://raw.githubusercontent.com/armgabrielyan/primer/main/install.sh | sh
@@ -61,19 +157,19 @@ curl -sSf https://raw.githubusercontent.com/armgabrielyan/primer/main/install.sh
 brew install armgabrielyan/tap/primer
 ```
 
-### npm/npx
+### npm / npx
 
 ```bash
 npm install -g @armengabrielyan/primer
 ```
 
-This installs the `primer` command. For one-off usage:
+For one-off usage:
 
 ```bash
 npx @armengabrielyan/primer list
 ```
 
-The `@armengabrielyan/primer` npm package downloads the matching prebuilt `primer` binary for your platform during install.
+The `@armengabrielyan/primer` package downloads the matching prebuilt `primer` binary for your platform during install.
 
 ### Cargo
 
@@ -114,9 +210,10 @@ The binary will be available at:
 cargo install --path .
 ```
 
-This installs `primer` into Cargo's bin directory so you can run it directly:
+### Sanity check after install
 
 ```bash
+primer --help
 primer list
 ```
 
@@ -130,7 +227,7 @@ primer completions bash
 primer completions fish
 ```
 
-## 🤖 Tool Integration
+## AI Tool Integration
 
 Primer has native workspace adapters for:
 
@@ -140,245 +237,122 @@ Primer has native workspace adapters for:
 - Gemini CLI
 - Cursor
 
-It can also work with other agents as long as they can follow the generated workspace instructions and call the local `primer` CLI when needed.
+Primer is designed to be used inside your AI coding agent. `primer init` generates tool-specific files into the workspace so the workflow is available where the project work actually happens.
 
-`primer init` generates tool-specific files into the workspace so the workflow is available where the project work actually happens.
-
-### Claude Code
-
-Use:
+Use the same `primer init` shape for every supported tool:
 
 ```bash
-primer init <recipe-id> --tool claude --path ~/projects/my-workspace
+primer init <recipe-id> --tool <claude|codex|opencode|gemini|cursor> --path ~/projects/my-workspace
 ```
 
-Primer generates:
+Generated files by tool:
 
-- `CLAUDE.md`
-- `.claude/commands/`
+| Tool | Generated files |
+|---|---|
+| Claude Code | `CLAUDE.md`, `.claude/commands/` |
+| Codex | `AGENTS.md`, `.agents/skills/` |
+| OpenCode | `AGENTS.md`, `.opencode/skills/` |
+| Gemini CLI | `GEMINI.md`, `.gemini/skills/` |
+| Cursor | `AGENTS.md`, `.cursor/skills/` |
 
-These commands are thin wrappers around the Primer workflow, with the CLI acting as the source of truth for stateful actions such as `primer-check`, `primer-status`, and `primer-next-milestone`.
+Those generated actions are the primary user experience. The CLI provides the underlying stateful operations, verification, and setup support that those actions rely on.
 
-### Codex
-
-Use:
-
-```bash
-primer init <recipe-id> --tool codex --path ~/projects/my-workspace
-```
-
-Primer generates:
-
-- `AGENTS.md`
-- `.agents/skills/`
-
-These skills expose the same Primer workflow inside Codex, including `primer-build`, `primer-check`, `primer-explain`, `primer-status`, and `primer-next-milestone`.
-
-### OpenCode
-
-Use:
-
-```bash
-primer init <recipe-id> --tool opencode --path ~/projects/my-workspace
-```
-
-Primer generates:
-
-- `AGENTS.md`
-- `.opencode/skills/`
-
-These skills are loaded by OpenCode's native skill system, while `AGENTS.md` provides the project rules and Primer workflow context for the workspace.
-
-### Gemini CLI
-
-Use:
-
-```bash
-primer init <recipe-id> --tool gemini --path ~/projects/my-workspace
-```
-
-Primer generates:
-
-- `GEMINI.md`
-- `.gemini/skills/`
-
-Gemini CLI loads `GEMINI.md` as project context and discovers the generated Primer skills from `.gemini/skills/`.
-
-### Cursor
-
-Use:
-
-```bash
-primer init <recipe-id> --tool cursor --path ~/projects/my-workspace
-```
-
-Primer generates:
-
-- `AGENTS.md`
-- `.cursor/skills/`
-
-Cursor reads `AGENTS.md` as project-level agent instructions and discovers the generated Primer skills from `.cursor/skills/`.
-
-## 🚀 Quickstart
-
-The installed CLI includes the built-in recipe catalog, so you do not need to keep a cloned `primer` repo around just to use `primer list`, `primer init`, or `primer doctor`.
-
-List available recipes:
-
-```bash
-primer list
-```
-
-Create a workspace for the operating-system recipe:
-
-```bash
-primer init operating-system --tool claude --path ~/projects/my-os
-```
-
-Check local dependencies for the first milestone:
-
-```bash
-primer doctor operating-system --milestone 01-bootloader
-```
-
-Open the generated workspace in your AI tool, then use the Primer skills inside that workspace:
-
-- `primer-build`: load the current milestone contract and active track guidance, then work only that scope
-- `primer-check`: run verification for the current milestone and mark it verified on success
-- `primer-next-milestone`: advance only after the current milestone has already passed verification
-- `primer-explain`: show the deeper explanation for the current milestone
-- `primer-status`: show current milestone, verification state, and progress
-
-If you prefer, you can also use the CLI directly from the workspace. The command surface looks like this:
-
-```text
-Usage: primer [OPTIONS] <COMMAND>
-
-Commands:
-  list            List available recipes
-  init            Initialize a new Primer workspace
-  doctor          Check required local tools for a recipe milestone
-  status          Show current Primer workspace progress
-  check           Run verification for the current milestone
-  next-milestone  Advance to the next milestone after verification
-  explain         Show the explanation for the current milestone
-  build           Show current milestone build guidance
-  completions     Generate shell completion scripts
-```
-
-## 🧭 First Run
-
-The fastest path from zero to working milestone looks like this:
-
-1. Run `primer init` to create a separate learner workspace.
-2. Run `primer doctor` to see what tools are missing before you start.
-3. Open that workspace in Claude Code, Codex, OpenCode, Gemini CLI, Cursor, or another compatible agent.
-4. Run the `primer-build` skill to load the current milestone contract and start implementing.
-5. Run the `primer-check` skill when you think the milestone is done.
-6. Run the `primer-next-milestone` skill only after the check passes.
-
-Primer creates a real project workspace. That workspace is where `Makefile`, source files, linker scripts, and milestone outputs live. The `primer` repository stays clean and acts as the recipe library plus workflow engine.
-
-## 🛠️ Core Commands
-
-The current CLI surface is:
-
-- `primer list`: show available recipes
-- `primer init`: create a workspace and generate adapter files
-- `primer doctor`: check milestone prerequisites
-- `primer status`: show current milestone, verification state, and progress
-- `primer build`: show the current milestone spec and active track guidance
-- `primer check`: run current milestone verification and update state on success
-- `primer next-milestone`: advance one milestone and clear verification state
-- `primer explain`: show the current milestone explanation
-- `primer completions`: generate shell completions
-
-The CLI is the source of truth for deterministic workflow actions:
-
-- `primer-check`
-- `primer-status`
-- `primer-explain`
-- `primer-next-milestone`
-
-Generated Claude, Codex, OpenCode, Gemini, and Cursor skills call into the CLI for those actions. `primer-build` stays agent-native, but uses `primer build` to load the current milestone contract first.
+If your preferred AI tool can follow workspace instructions and run the local `primer` CLI, Primer can usually fit that workflow as well.
 
 ## Available Recipe
 
 Current catalog:
 
-| Recipe ID | Project | Difficulty | Path |
+| Recipe ID | Project | Difficulty | Best starting advice |
 |---|---|---|---|
-| `operating-system` | Build Your Own Operating System | `hard` | `recipes/operating-system` |
+| `operating-system` | Build Your Own Operating System | `hard` | Start with `--track learner` and treat it like a guided lab, not a quick tutorial |
+
+For more detail on the current recipe, see [recipes/operating-system/README.md](recipes/operating-system/README.md).
 
 ## Tracks
 
-Primer supports two tracks for each milestone:
+Primer supports two interaction styles:
 
-- `learner`: the default track; explain the step, ask at least one question, and teach while building
-- `builder`: opt-in track; implement directly with minimal commentary
+| Track | What it feels like | Best for |
+|---|---|---|
+| `learner` | The agent explains the step, teaches while building, and pauses at natural checkpoints | beginners, students, and first-time Primer users |
+| `builder` | The agent implements directly with minimal commentary | users who already understand the workflow and want less narration |
 
-If you do not pass `--track`, Primer uses `learner`.
-
-Choose the track explicitly at workspace initialization when you want a different interaction style:
+Examples:
 
 ```bash
 primer init operating-system --tool codex --track learner --path ~/projects/my-os
 ```
 
-For direct execution with less teaching-oriented guidance:
-
 ```bash
 primer init operating-system --tool codex --track builder --path ~/projects/my-os
 ```
 
-## Prerequisites
+If you do not pass `--track`, Primer uses `learner`.
 
-For the current `operating-system` recipe, the important tools are:
+## Agent Workflow Actions
 
-- `nasm`: required from milestone 01
-- `qemu-system-i386`: required to run and verify the OS image
-- `make`: required in the learner project workspace
-- `i686-elf-gcc` and `i686-elf-ld`: required from milestone 02 onward
+Once the workspace is initialized, this is the primary way to use Primer:
 
-Use `primer doctor` instead of guessing:
+| Action | What it does | When to use it |
+|---|---|---|
+| `primer-build` | Load the current milestone scope and implement only that step | when you are actively building |
+| `primer-status` | Show current milestone, verification state, and progress | anytime you want orientation |
+| `primer-explain` | Show the deeper explanation for the current milestone | when you want more context or teaching |
+| `primer-check` | Run milestone verification and mark it verified on success | when you think the milestone is done |
+| `primer-next-milestone` | Unlock the next milestone only after verification passes | when you are ready to advance |
 
-```bash
-primer doctor operating-system --milestone 02-kernel-entry
-```
+Primer also exposes matching CLI commands such as `primer build`, `primer status`, `primer explain`, `primer check`, and `primer next-milestone`, but the default experience is to use the generated actions inside your AI coding agent.
 
-Different recipes can declare different prerequisites. The CLI reads those requirements from the recipe milestones, so treat the list above as recipe-specific, not global.
+## CLI Setup Commands
+
+Use the CLI directly for setup, diagnostics, and terminal utilities:
+
+| Command | What it does | When to use it |
+|---|---|---|
+| `primer list` | List available recipes | when you are exploring |
+| `primer init` | Create a workspace and generate adapter files | when you are starting a new project |
+| `primer doctor` | Check local prerequisites for a recipe milestone | before you begin or when setup is failing |
+| `primer completions` | Generate shell completion scripts | when you want faster terminal use |
+
+Useful safety flags:
+
+- `primer init --dry-run` shows what would happen without writing files.
+- `primer init --force` allows initialization into a non-empty directory.
 
 ## Workspace Model
 
 Primer uses two separate locations:
 
-- the `primer` repo: recipes, shared contracts, adapter generation, CLI
-- your project workspace: the actual code you are building milestone by milestone
+- the `primer` repo: recipes, adapter generation, the CLI engine, and shared workflow logic
+- your generated project workspace: the code and Primer state for the project you are building
+- your AI coding agent: the main place where you read, build, check, and advance milestones
 
-Do not build inside the `primer` repo itself. `primer init` is designed to create or prepare a separate workspace for exactly this reason.
+Do not build inside the `primer` repo itself. `primer init` is designed to create or prepare a separate workspace for that work.
 
-## Example Flow
+After `primer init`, your generated workspace contains:
 
-Here is the intended day-to-day loop from inside a workspace:
+- the project files your agent will actually build
+- the current Primer state
+- tool-specific instructions and workflow actions
 
-1. Run `primer-status` to see where you are.
-2. Run `primer-build` to load the current milestone contract and work only that scope.
-3. Run `primer-check` to verify the result.
-4. Run `primer-explain` if you want the deeper reasoning behind the milestone.
-5. Run `primer-next-milestone` to unlock the next step.
+For most users, the generated workspace opened inside the AI coding agent is the primary interface. The CLI exists to support that workflow.
 
-This gives the agent a constrained problem and gives you a visible notion of progress.
+## Troubleshooting
 
-## Repository Layout
+- Run `primer doctor` after `primer init` if you are unsure whether your local toolchain is ready for the current milestone.
+- If your AI tool does not see the generated Primer workflow actions, make sure you opened the generated workspace, not the `primer` repository.
+- If your AI tool cannot run `primer`, install or build the CLI first and make sure it is on your `PATH`.
+- `primer init` is safe by default. Use `--force` only when you deliberately want to initialize into a non-empty directory.
 
-- `src/`: Rust CLI implementation
-- `recipes/`: milestone contracts and recipe content
-- `adapters/_shared/`: shared skill behavior and state model
-- `tests/`: Rust CLI and bundled-workflow tests
-- `recipe-spec.md`: canonical recipe contract for v0.1
+## Contributing
 
-## 🤝 Contributing
+Primer is not only for people using recipes. It is also for people who want to author them.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contributor checks, quality gates, adapter standards, and test requirements.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contributor workflow, quality bar, and community direction.
 
 If you want to propose a new community learning path, start with [docs/community-recipes.md](docs/community-recipes.md).
+
+## License
+
+Primer is available under the [MIT License](LICENSE).
