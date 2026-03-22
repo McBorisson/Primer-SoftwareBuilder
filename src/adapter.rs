@@ -33,6 +33,7 @@ pub fn generate(
     match tool {
         Tool::Codex => generate_codex(recipe, recipe_path, output_dir, track, milestone_id),
         Tool::Claude => generate_claude(recipe, recipe_path, output_dir, track, milestone_id),
+        Tool::Opencode => generate_opencode(recipe, recipe_path, output_dir, track, milestone_id),
     }
 }
 
@@ -147,6 +148,53 @@ fn generate_claude(
     Ok(())
 }
 
+fn generate_opencode(
+    recipe: &Recipe,
+    recipe_path: &Path,
+    output_dir: &Path,
+    track: &str,
+    milestone_id: &str,
+) -> Result<()> {
+    let agents_md = output_dir.join("AGENTS.md");
+    let skills_root = output_dir.join(".opencode").join("skills");
+    fs::create_dir_all(&skills_root)?;
+
+    fs::write(
+        &agents_md,
+        render_adapter_context(recipe, recipe_path, output_dir, track, milestone_id),
+    )?;
+
+    for filename in CODEX_SKILL_FILES {
+        let shared_body = bundled::require_shared_contract(filename)?;
+        let command_name = filename.trim_end_matches(".md");
+        let skill_name = format!("primer-{command_name}");
+        let skill_dir = skills_root.join(&skill_name);
+        fs::create_dir_all(&skill_dir)?;
+
+        let body = match command_name {
+            "check" | "explain" | "status" | "next-milestone" => {
+                render_cli_backed_skill_body(command_name, shared_body)
+            }
+            "build" => render_build_skill_body(shared_body),
+            _ => shared_body.to_string(),
+        };
+
+        fs::write(
+            skill_dir.join("SKILL.md"),
+            render_opencode_skill_md(
+                &skill_name,
+                &format!(
+                    "Use when the user wants to {} for the current Primer recipe in this repo workspace.",
+                    command_name.replace('-', " ")
+                ),
+                &body,
+            ),
+        )?;
+    }
+
+    Ok(())
+}
+
 fn render_adapter_context(
     recipe: &Recipe,
     recipe_path: &Path,
@@ -170,6 +218,12 @@ fn render_adapter_context(
 
 fn render_skill_md(skill_name: &str, description: &str, body: &str) -> String {
     format!("---\nname: {skill_name}\ndescription: {description}\n---\n\n{body}\n")
+}
+
+fn render_opencode_skill_md(skill_name: &str, description: &str, body: &str) -> String {
+    format!(
+        "---\nname: {skill_name}\ndescription: {description}\ncompatibility: opencode\n---\n\n{body}\n"
+    )
 }
 
 fn render_openai_yaml(display_name: &str, short_description: &str, default_prompt: &str) -> String {
@@ -298,5 +352,36 @@ mod tests {
         let context = read(&out.join("CLAUDE.md"));
         assert!(context.contains("track: builder"));
         assert!(context.contains("milestone_id: 03-vga-output"));
+    }
+
+    #[test]
+    fn opencode_generation_creates_expected_files() {
+        let source = RecipeSource::Bundled;
+        let recipe = recipe::load_by_id(&source, "operating-system").expect("recipe should load");
+        let out = temp_dir("opencode-gen");
+        let recipe_path = recipe::materialize_into_workspace(&source, "operating-system", &out)
+            .expect("recipe materialization should succeed");
+
+        generate(
+            &recipe,
+            &recipe_path,
+            &out,
+            Tool::Opencode,
+            "learner",
+            "01-bootloader",
+        )
+        .expect("adapter generation should succeed");
+
+        assert!(out.join("AGENTS.md").exists());
+        assert!(out.join(".opencode/skills/primer-build/SKILL.md").exists());
+        assert!(out.join(".opencode/skills/primer-check/SKILL.md").exists());
+
+        let context = read(&out.join("AGENTS.md"));
+        assert!(context.contains("recipe_id: operating-system"));
+        assert!(context.contains("milestone_id: 01-bootloader"));
+
+        let skill = read(&out.join(".opencode/skills/primer-build/SKILL.md"));
+        assert!(skill.contains("name: primer-build"));
+        assert!(skill.contains("compatibility: opencode"));
     }
 }
