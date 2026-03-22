@@ -1,17 +1,19 @@
-# primer npm package
+# @armengabrielyan/primer npm package
 
 This is the npm distribution package for [primer](https://github.com/armgabrielyan/primer), a CLI for AI-guided project recipes and milestone workflows.
 
 ## Installation
 
 ```bash
-npm install -g primer-cli
+npm install -g @armengabrielyan/primer
 ```
 
-Or run directly with npx:
+This installs the `primer` command.
+
+For one-off usage with `npx`:
 
 ```bash
-npx primer-cli list
+npx @armengabrielyan/primer list
 ```
 
 ## What this package does

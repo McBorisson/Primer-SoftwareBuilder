@@ -43,13 +43,16 @@ brew install armgabrielyan/tap/primer
 ### npm/npx
 
 ```bash
-npm install -g primer-cli
-
-# Or run directly
-npx primer-cli list
+npm install -g @armengabrielyan/primer
 ```
 
-This package downloads the matching prebuilt `primer` binary for your platform during install.
+This installs the `primer` command. For one-off usage:
+
+```bash
+npx @armengabrielyan/primer list
+```
+
+The `@armengabrielyan/primer` npm package downloads the matching prebuilt `primer` binary for your platform during install.
 
 ### Cargo
 
