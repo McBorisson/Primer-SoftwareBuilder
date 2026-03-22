@@ -9,6 +9,15 @@ Primer is also intended to become a community library of learning paths. If you 
 - Bash
 - Rust toolchain
 - Cargo
+- `pre-commit` (recommended for local validation)
+
+## Local setup
+
+Install and enable the git hooks:
+
+```bash
+pre-commit install
+```
 
 ## Core rules
 
@@ -19,7 +28,13 @@ Primer is also intended to become a community library of learning paths. If you 
 
 ## Required checks before PR
 
-Run the automated test suite:
+Run the automated checks:
+
+```bash
+pre-commit run --all-files
+```
+
+And run the automated test suite:
 
 ```bash
 cargo test

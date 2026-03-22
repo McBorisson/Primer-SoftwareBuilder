@@ -84,14 +84,14 @@ pub fn validate_recipe_yaml(recipe_target: &Path) -> Vec<String> {
         None => {}
     }
 
-    if let Some(difficulty) = get_string(root, "difficulty") {
-        if !DIFFICULTY_VALUES.contains(&difficulty) {
-            errors.push(error(
-                &recipe_yaml,
-                "difficulty",
-                &format!("must be one of {:?}", DIFFICULTY_VALUES),
-            ));
-        }
+    if let Some(difficulty) = get_string(root, "difficulty")
+        && !DIFFICULTY_VALUES.contains(&difficulty)
+    {
+        errors.push(error(
+            &recipe_yaml,
+            "difficulty",
+            &format!("must be one of {:?}", DIFFICULTY_VALUES),
+        ));
     }
 
     if let Some(value) = get(root, "stack") {
@@ -253,19 +253,19 @@ pub fn validate_recipe_yaml(recipe_target: &Path) -> Vec<String> {
                 .split_once('-')
                 .and_then(|(prefix, _)| prefix.parse::<u32>().ok())
                 .unwrap_or(0);
-            if let Some(previous) = last_number {
-                if number <= previous {
-                    errors.push(error(
-                        &recipe_yaml,
-                        "milestones",
-                        &format!(
-                            "milestones must be ordered by numeric prefix: '{}' before '{}'",
-                            last_id.as_deref().unwrap_or_default(),
-                            id
-                        ),
-                    ));
-                    break;
-                }
+            if let Some(previous) = last_number
+                && number <= previous
+            {
+                errors.push(error(
+                    &recipe_yaml,
+                    "milestones",
+                    &format!(
+                        "milestones must be ordered by numeric prefix: '{}' before '{}'",
+                        last_id.as_deref().unwrap_or_default(),
+                        id
+                    ),
+                ));
+                break;
             }
             last_number = Some(number);
             last_id = Some(id.clone());
