@@ -15,24 +15,24 @@ class Primer < Formula
   on_macos do
     on_intel do
       url "https://github.com/armgabrielyan/primer/releases/download/v#{version}/primer-#{version}-x86_64-apple-darwin.tar.gz"
-      sha256 "REPLACE_X86_64_DARWIN_SHA256"
+      sha256 "0e6b1b5500e3816256d991f4dc07040c73371578dc13d71b5ef38242eecfbcf0"
     end
 
     on_arm do
       url "https://github.com/armgabrielyan/primer/releases/download/v#{version}/primer-#{version}-aarch64-apple-darwin.tar.gz"
-      sha256 "REPLACE_AARCH64_DARWIN_SHA256"
+      sha256 "3f3c18908506cab829237970dd9fb1bcf58c651f698331fe7d9e368ef6ad760f"
     end
   end
 
   on_linux do
     on_intel do
       url "https://github.com/armgabrielyan/primer/releases/download/v#{version}/primer-#{version}-x86_64-unknown-linux-gnu.tar.gz"
-      sha256 "REPLACE_X86_64_LINUX_SHA256"
+      sha256 "9e8a3e0aae20b75525d80a4fbd7f2bc018a5220803f0ec09b555c834305f2631"
     end
 
     on_arm do
       url "https://github.com/armgabrielyan/primer/releases/download/v#{version}/primer-#{version}-aarch64-unknown-linux-gnu.tar.gz"
-      sha256 "REPLACE_AARCH64_LINUX_SHA256"
+      sha256 "58886fbd719be53961da1f674371152ae4b1e3faab36038782dbd7e1b293ee5b"
     end
   end
 
