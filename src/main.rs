@@ -12,6 +12,7 @@ mod verification_history;
 mod workflow;
 mod workspace;
 mod workstream;
+mod workstream_analysis;
 mod workstream_resume;
 
 use anyhow::Result;
@@ -48,6 +49,9 @@ fn main() -> Result<()> {
                 Commands::Workstream(args) => match args.command {
                     WorkstreamCommands::List(args) => {
                         commands::workstream::list(&workspace_hint, args)
+                    }
+                    WorkstreamCommands::Analyze(args) => {
+                        commands::workstream::analyze(&workspace_hint, args)
                     }
                     WorkstreamCommands::Init(args) => {
                         commands::workstream::init(&workspace_hint, args)

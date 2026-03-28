@@ -5,11 +5,14 @@ use std::fs;
 use std::path::Path;
 
 use crate::adapter;
-use crate::cli::{Tool, WorkstreamInitArgs, WorkstreamListArgs, WorkstreamSwitchArgs};
+use crate::cli::{
+    Tool, WorkstreamAnalyzeArgs, WorkstreamInitArgs, WorkstreamListArgs, WorkstreamSwitchArgs,
+};
 use crate::state::{self, PrimerState};
 use crate::ui;
 use crate::workflow::{self, WorkflowSourceKind};
 use crate::workstream;
+use crate::workstream_analysis;
 use crate::workstream_resume;
 
 #[derive(Debug, Serialize)]
@@ -53,10 +56,16 @@ pub fn list(workspace_hint: &Path, args: WorkstreamListArgs) -> Result<()> {
         ));
         println!();
         ui::section("Next");
-        ui::numbered_steps(&[format!(
-            "Run {} to initialize the first workstream for this repository",
-            ui::code("primer workstream init <workstream-id> --goal ... --tool ...")
-        )]);
+        ui::numbered_steps(&[
+            format!(
+                "Run {} to inspect likely first-milestone boundaries before scaffolding a workstream",
+                ui::code("primer workstream analyze")
+            ),
+            format!(
+                "Run {} to initialize the first workstream for this repository",
+                ui::code("primer workstream init <workstream-id> --goal ... --tool ...")
+            ),
+        ]);
         return Ok(());
     }
 
@@ -142,6 +151,113 @@ pub fn list(workspace_hint: &Path, args: WorkstreamListArgs) -> Result<()> {
                 .to_string(),
         );
     }
+    ui::numbered_steps(&steps);
+
+    Ok(())
+}
+
+pub fn analyze(workspace_hint: &Path, args: WorkstreamAnalyzeArgs) -> Result<()> {
+    let repo_root = workstream::ensure_repository_root(workspace_hint)?;
+    let analysis = workstream_analysis::analyze_repository(&repo_root, args.goal.as_deref())?;
+
+    if args.json {
+        let json = serde_json::to_string_pretty(&analysis)
+            .context("failed to serialize workstream analysis output")?;
+        println!("{json}");
+        return Ok(());
+    }
+
+    ui::section("Primer workstream analyze");
+    println!();
+    ui::key_value_table(&[
+        ui::KeyValueRow {
+            key: "Repository".to_string(),
+            value: analysis.repository.clone(),
+            value_color: Some(Color::Cyan),
+        },
+        ui::KeyValueRow {
+            key: "Goal".to_string(),
+            value: analysis
+                .goal
+                .clone()
+                .unwrap_or_else(|| "not provided".to_string()),
+            value_color: None,
+        },
+        ui::KeyValueRow {
+            key: "Detected languages".to_string(),
+            value: if analysis.detected_languages.is_empty() {
+                "none detected".to_string()
+            } else {
+                analysis.detected_languages.join(", ")
+            },
+            value_color: None,
+        },
+        ui::KeyValueRow {
+            key: "Scan".to_string(),
+            value: if analysis.truncated {
+                format!("{} files scanned (truncated)", analysis.scanned_files)
+            } else {
+                format!("{} files scanned", analysis.scanned_files)
+            },
+            value_color: if analysis.truncated {
+                Some(Color::Yellow)
+            } else {
+                None
+            },
+        },
+    ]);
+
+    println!();
+    ui::section("Suggested first milestones");
+    if analysis.candidates.is_empty() {
+        ui::info("No obvious source boundaries were detected.");
+    } else {
+        for candidate in &analysis.candidates {
+            println!();
+            println!(
+                "{}. {}",
+                candidate.rank,
+                ui::code(format!("{} ({})", candidate.boundary, candidate.size))
+            );
+            println!("   Reason: {}", candidate.reason);
+            println!("   Verification: {}", candidate.verification_hint);
+            println!(
+                "   Boundary stats: {} code file(s), {} test file(s), {}",
+                candidate.code_files,
+                candidate.test_files,
+                if candidate.languages.is_empty() {
+                    "no language detected".to_string()
+                } else {
+                    candidate.languages.join(", ")
+                }
+            );
+            if !candidate.goal_match_terms.is_empty() {
+                println!("   Goal match: {}", candidate.goal_match_terms.join(", "));
+            }
+            if !candidate.likely_files.is_empty() {
+                println!("   Likely files: {}", candidate.likely_files.join(", "));
+            }
+            if !candidate.risk_hints.is_empty() {
+                println!("   Risks: {}", candidate.risk_hints.join(" "));
+            }
+        }
+    }
+
+    if !analysis.general_risks.is_empty() {
+        println!();
+        ui::section("Repository risks");
+        for risk in &analysis.general_risks {
+            println!("- {risk}");
+        }
+    }
+
+    println!();
+    ui::section("Next");
+    let mut steps = analysis.recommendations.clone();
+    steps.push(
+        "Run primer workstream init <workstream-id> --goal ... --tool ... after you pick the boundary."
+            .to_string(),
+    );
     ui::numbered_steps(&steps);
 
     Ok(())

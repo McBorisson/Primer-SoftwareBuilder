@@ -171,6 +171,9 @@ pub enum WorkstreamCommands {
     /// List repository-local Primer workstreams
     List(WorkstreamListArgs),
 
+    /// Analyze repository boundaries and suggest safe first milestones
+    Analyze(WorkstreamAnalyzeArgs),
+
     /// Initialize a repository-local Primer workstream
     Init(WorkstreamInitArgs),
 
@@ -180,6 +183,17 @@ pub enum WorkstreamCommands {
 
 #[derive(Debug, Clone, Args)]
 pub struct WorkstreamListArgs {
+    /// Print machine-readable JSON output
+    #[arg(long)]
+    pub json: bool,
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct WorkstreamAnalyzeArgs {
+    /// Optional workstream goal to bias boundary suggestions
+    #[arg(long, value_name = "TEXT")]
+    pub goal: Option<String>,
+
     /// Print machine-readable JSON output
     #[arg(long)]
     pub json: bool,

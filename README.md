@@ -333,6 +333,7 @@ Use the CLI directly for setup, diagnostics, and terminal utilities:
 | `primer init` | Create a workspace and generate adapter files | when you are starting a new project |
 | `primer doctor` | Check local prerequisites for a recipe milestone | before you begin or when setup is failing |
 | `primer workstream list` | List initialized brownfield workstreams in the current repository, including active state and saved progress | when you want to see what is available, active, and where each workstream will resume |
+| `primer workstream analyze` | Analyze repository boundaries and suggest safe first-milestone candidates | when you need help choosing the first brownfield milestone |
 | `primer workstream init` | Bootstrap Primer inside the current repository for one brownfield workstream | when you want a milestone path inside an existing repo |
 | `primer workstream switch` | Activate and resume another initialized brownfield workstream in the current repository | when you want to move between repo-local workstreams |
 | `primer track` | Switch the active learner or builder track in the current workspace | when you want to change interaction style mid-workflow |
@@ -347,11 +348,13 @@ For an existing repository, bootstrap a repo-local workstream from the repositor
 
 ```bash
 primer workstream list
+primer workstream analyze --goal "Reduce auth pipeline complexity"
 primer workstream init auth-refactor --goal "Reduce auth pipeline complexity" --tool codex --track learner
 primer workstream switch auth-refactor
 ```
 
 Use `primer workstream list --json` when you need the same repository-local workstream state in a machine-readable form.
+Use `primer workstream analyze --json` when you need brownfield candidate suggestions in a machine-readable form.
 Use `primer recipe lint --json` when you need recipe lint findings in a machine-readable form.
 Use `primer milestone lint --json` when you need one milestone's lint findings in a machine-readable form.
 

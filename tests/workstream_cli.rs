@@ -83,6 +83,7 @@ fn workstream_list_reports_when_no_workstreams_exist() {
     let stdout = String::from_utf8_lossy(&list.stdout);
     assert!(stdout.contains("Primer workstreams"));
     assert!(stdout.contains("No repository-local Primer workstreams found"));
+    assert!(stdout.contains("primer workstream analyze"));
     assert!(stdout.contains("primer workstream init <workstream-id> --goal ... --tool ..."));
 }
 
@@ -110,6 +111,83 @@ fn workstream_list_json_reports_when_no_workstreams_exist() {
             .expect("workstreams should be an array")
             .len(),
         0
+    );
+}
+
+#[test]
+fn workstream_analyze_suggests_repo_boundaries() {
+    let repo = temp_dir("workstream-analyze");
+    fs::create_dir_all(repo.join(".git")).expect("failed to create .git dir");
+    write_file(&repo.join("src/main.rs"), "fn main() {}\n");
+    write_file(&repo.join("src/auth.rs"), "pub fn login() {}\n");
+    write_file(&repo.join("tests/auth_test.rs"), "#[test]\nfn auth() {}\n");
+    write_file(&repo.join("README.md"), "# Demo repo\n");
+
+    let output = run_primer(&repo, &["workstream", "analyze"]);
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("Primer workstream analyze"));
+    assert!(stdout.contains("Suggested first milestones"));
+    assert!(stdout.contains("src"));
+    assert!(stdout.contains("tests/auth_test.rs"));
+    assert!(stdout.contains("primer workstream init <workstream-id> --goal ... --tool ..."));
+}
+
+#[test]
+fn workstream_analyze_json_biases_toward_goal_matching_boundary() {
+    let repo = temp_dir("workstream-analyze-json");
+    fs::create_dir_all(repo.join(".git")).expect("failed to create .git dir");
+    write_file(
+        &repo.join("packages/auth/src/lib.rs"),
+        "pub fn token() {}\n",
+    );
+    write_file(
+        &repo.join("packages/auth/tests/token_test.rs"),
+        "#[test]\nfn token() {}\n",
+    );
+    write_file(
+        &repo.join("packages/billing/src/lib.rs"),
+        "pub fn bill() {}\n",
+    );
+    write_file(
+        &repo.join("packages/billing/tests/billing_test.rs"),
+        "#[test]\nfn billing() {}\n",
+    );
+
+    let output = run_primer(
+        &repo,
+        &[
+            "workstream",
+            "analyze",
+            "--goal",
+            "Harden auth tokens",
+            "--json",
+        ],
+    );
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("failed to parse JSON output");
+    let candidates = json["candidates"]
+        .as_array()
+        .expect("candidates should be an array");
+    assert!(!candidates.is_empty());
+    assert_eq!(candidates[0]["boundary"], "packages/auth");
+    assert!(
+        candidates[0]["goal_match_terms"]
+            .as_array()
+            .expect("goal_match_terms should be an array")
+            .iter()
+            .any(|value| value == "auth")
     );
 }
 
