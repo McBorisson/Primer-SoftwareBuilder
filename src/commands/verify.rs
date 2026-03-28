@@ -2,12 +2,14 @@ use anyhow::{Context, Result, bail};
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::time::Instant;
 #[cfg(windows)]
 use which::which;
 
 use crate::recipe;
 use crate::state;
 use crate::ui;
+use crate::verification_history::{self, VerificationCommand, VerificationOutcome};
 
 pub fn run(workspace_hint: &Path) -> Result<()> {
     let mut state = state::load_from_workspace(workspace_hint)?;
@@ -31,6 +33,7 @@ pub fn run(workspace_hint: &Path) -> Result<()> {
     ));
     println!();
 
+    let started_at = Instant::now();
     let status = Command::new(&verify_command.program)
         .args(&verify_command.args)
         .current_dir(&state.workspace_root)
@@ -39,11 +42,33 @@ pub fn run(workspace_hint: &Path) -> Result<()> {
         .stderr(Stdio::inherit())
         .status()
         .with_context(|| format!("failed to execute {}", verify_command.script.display()))?;
+    let duration = started_at.elapsed();
+    let verification_command = VerificationCommand {
+        program: &verify_command.program,
+        args: &verify_command.args,
+        script: &verify_command.script,
+    };
 
     if !status.success() {
-        if state.verified_milestone_id.as_deref() == Some(milestone.id.as_str()) {
+        let cleared_prior_verified_state =
+            state.verified_milestone_id.as_deref() == Some(milestone.id.as_str());
+        if cleared_prior_verified_state {
             state.verified_milestone_id = None;
             state::write(&state)?;
+        }
+
+        verification_history::write_record(
+            &state,
+            &verification_command,
+            VerificationOutcome::Failed,
+            duration,
+            status.code(),
+            false,
+            cleared_prior_verified_state,
+            Some("milestone verification failed"),
+        )?;
+
+        if cleared_prior_verified_state {
             bail!(
                 "milestone {} verification failed; current verified state was cleared",
                 milestone.id
@@ -55,6 +80,16 @@ pub fn run(workspace_hint: &Path) -> Result<()> {
 
     state.verified_milestone_id = Some(milestone.id.clone());
     state::write(&state)?;
+    verification_history::write_record(
+        &state,
+        &verification_command,
+        VerificationOutcome::Passed,
+        duration,
+        status.code(),
+        true,
+        false,
+        Some("milestone verification passed"),
+    )?;
 
     println!();
     ui::success(&format!("Verified {}", milestone.id));

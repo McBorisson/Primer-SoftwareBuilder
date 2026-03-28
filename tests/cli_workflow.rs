@@ -208,6 +208,29 @@ fn read_context(workspace_root: &Path) -> String {
     fs::read_to_string(workspace_root.join("CLAUDE.md")).expect("failed to read context")
 }
 
+fn verification_record_files(workspace_root: &Path, milestone_id: &str) -> Vec<PathBuf> {
+    let dir = workspace_root
+        .join(".primer")
+        .join("runtime")
+        .join("verifications")
+        .join(milestone_id);
+    let mut files = fs::read_dir(&dir)
+        .expect("failed to read verification record dir")
+        .map(|entry| {
+            entry
+                .expect("failed to read verification record entry")
+                .path()
+        })
+        .collect::<Vec<_>>();
+    files.sort();
+    files
+}
+
+fn read_verification_record(path: &Path) -> serde_json::Value {
+    let raw = fs::read_to_string(path).expect("failed to read verification record");
+    serde_json::from_str(&raw).expect("failed to parse verification record")
+}
+
 #[test]
 fn verify_updates_verified_milestone_on_success() {
     let (_primer_root, workspace_root) = setup_fixture("verify-success", None);
@@ -222,6 +245,14 @@ fn verify_updates_verified_milestone_on_success() {
     );
     let context = read_context(&workspace_root);
     assert!(context.contains("verified_milestone_id: 01-alpha"));
+
+    let records = verification_record_files(&workspace_root, "01-alpha");
+    assert_eq!(records.len(), 1);
+    let record = read_verification_record(&records[0]);
+    assert_eq!(record["outcome"], "passed");
+    assert_eq!(record["verified_state_after"], true);
+    assert_eq!(record["cleared_prior_verified_state"], false);
+    assert_eq!(record["milestone_id"], "01-alpha");
 }
 
 #[test]
@@ -252,6 +283,13 @@ fn verify_failure_keeps_unverified_state_unchanged() {
     assert!(stderr.contains("verification failed"));
     let context = read_context(&workspace_root);
     assert!(context.contains("verified_milestone_id: null"));
+
+    let records = verification_record_files(&workspace_root, "01-alpha");
+    assert_eq!(records.len(), 1);
+    let record = read_verification_record(&records[0]);
+    assert_eq!(record["outcome"], "failed");
+    assert_eq!(record["verified_state_after"], false);
+    assert_eq!(record["cleared_prior_verified_state"], false);
 }
 
 #[test]
@@ -266,6 +304,46 @@ fn verify_failure_clears_prior_verified_state() {
     assert!(stderr.contains("current verified state was cleared"));
     let context = read_context(&workspace_root);
     assert!(context.contains("verified_milestone_id: null"));
+
+    let records = verification_record_files(&workspace_root, "01-alpha");
+    assert_eq!(records.len(), 1);
+    let record = read_verification_record(&records[0]);
+    assert_eq!(record["outcome"], "failed");
+    assert_eq!(record["verified_state_after"], false);
+    assert_eq!(record["cleared_prior_verified_state"], true);
+}
+
+#[test]
+fn repeated_verifications_create_multiple_immutable_records() {
+    let (_primer_root, workspace_root) = setup_fixture("verify-history", None);
+    write_file(&workspace_root.join("milestone.ok"), "ok\n");
+
+    let first = run_primer(&workspace_root, &["verify"]);
+    assert!(
+        first.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&first.stderr)
+    );
+
+    fs::remove_file(workspace_root.join("milestone.ok")).expect("failed to remove milestone.ok");
+
+    let second = run_primer(&workspace_root, &["verify"]);
+    assert!(!second.status.success());
+
+    let records = verification_record_files(&workspace_root, "01-alpha");
+    assert_eq!(records.len(), 2);
+
+    let outcomes = records
+        .iter()
+        .map(|path| {
+            read_verification_record(path)["outcome"]
+                .as_str()
+                .unwrap()
+                .to_string()
+        })
+        .collect::<Vec<_>>();
+    assert!(outcomes.contains(&"passed".to_string()));
+    assert!(outcomes.contains(&"failed".to_string()));
 }
 
 #[test]

@@ -7,6 +7,7 @@ mod recipe;
 mod state;
 mod ui;
 mod validation;
+mod verification_history;
 mod workspace;
 
 use anyhow::Result;
