@@ -200,11 +200,16 @@ pub fn run(workspace_hint: &Path) -> Result<()> {
                     ui::reference("skill", "primer-explain")
                 ));
             }
-            if retry_assessment.should_surface_if_stuck()
-                && let Some(split_if_stuck) = current.split_if_stuck.as_ref()
-            {
+            if retry_assessment.should_surface_if_stuck() {
+                if let Some(split_if_stuck) = current.split_if_stuck.as_ref() {
+                    steps.push(format!(
+                        "Follow the milestone's If stuck guidance: {split_if_stuck}"
+                    ));
+                }
                 steps.push(format!(
-                    "Follow the milestone's If stuck guidance: {split_if_stuck}"
+                    "If a different mode would help, switch tracks with {} or {}",
+                    ui::code("primer track learner"),
+                    ui::code("primer track builder")
                 ));
             }
             if retry_assessment.should_flag_scope_risk() {

@@ -294,6 +294,13 @@ primer init operating-system --tool codex --track builder --path ~/projects/my-o
 
 If you do not pass `--track`, Primer uses `learner`.
 
+You can switch later without re-initializing:
+
+```bash
+primer track builder
+primer track learner
+```
+
 ## Agent Workflow Actions
 
 Once the workspace is initialized, this is the primary way to use Primer:
@@ -301,12 +308,13 @@ Once the workspace is initialized, this is the primary way to use Primer:
 | Action | What it does | When to use it |
 |---|---|---|
 | `primer-build` | Load the current milestone scope and implement only that step | when you are actively building |
+| `primer-track` | Switch the active learner or builder track for the workspace | when you want a different guidance style without re-initializing |
 | `primer-status` | Show current milestone, verification state, and progress | anytime you want orientation |
 | `primer-explain` | Show the deeper explanation for the current milestone | when you want more context or teaching |
 | `primer-verify` | Run milestone verification and mark it verified on success | when you think the milestone is done |
 | `primer-next-milestone` | Unlock the next milestone only after verification passes | when you are ready to advance |
 
-Primer also exposes matching CLI commands such as `primer build`, `primer status`, `primer explain`, `primer verify`, and `primer next-milestone`, but the default experience is to use the generated actions inside your AI coding agent.
+Primer also exposes matching CLI commands such as `primer build`, `primer track`, `primer status`, `primer explain`, `primer verify`, and `primer next-milestone`, but the default experience is to use the generated actions inside your AI coding agent.
 
 ## CLI Setup Commands
 
@@ -317,6 +325,7 @@ Use the CLI directly for setup, diagnostics, and terminal utilities:
 | `primer list` | List available recipes | when you are exploring |
 | `primer init` | Create a workspace and generate adapter files | when you are starting a new project |
 | `primer doctor` | Check local prerequisites for a recipe milestone | before you begin or when setup is failing |
+| `primer track` | Switch the active learner or builder track in the current workspace | when you want to change interaction style mid-workflow |
 | `primer completions` | Generate shell completion scripts | when you want faster terminal use |
 
 Useful safety flags:

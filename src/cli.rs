@@ -34,6 +34,10 @@ pub enum Commands {
     /// Show current Primer workspace progress
     Status,
 
+    /// Switch the active workspace track
+    #[command(name = "track")]
+    Track(TrackArgs),
+
     /// Run verification for the current milestone
     #[command(name = "verify", visible_alias = "check")]
     Verify,
@@ -93,6 +97,13 @@ pub struct DoctorArgs {
     /// Milestone identifier to check against
     #[arg(long, value_name = "ID")]
     pub milestone: Option<String>,
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct TrackArgs {
+    /// Target interaction track
+    #[arg(value_enum, value_name = "TRACK")]
+    pub track: Track,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]

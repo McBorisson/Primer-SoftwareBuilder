@@ -89,6 +89,11 @@ pub fn run(workspace_hint: &Path) -> Result<()> {
             "Run the {} when the milestone is complete",
             ui::reference("skill", "primer-verify")
         ),
+        format!(
+            "Switch tracks any time with {} or {} if you want different guidance",
+            ui::code("primer track learner"),
+            ui::code("primer track builder")
+        ),
     ]);
 
     Ok(())

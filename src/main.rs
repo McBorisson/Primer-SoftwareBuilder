@@ -33,6 +33,7 @@ fn main() -> Result<()> {
                 Commands::Init(args) => commands::init::run(&source, args),
                 Commands::Doctor(args) => commands::doctor::run(&source, args),
                 Commands::Status => commands::status::run(&workspace_hint),
+                Commands::Track(args) => commands::track::run(&workspace_hint, args),
                 Commands::Verify => commands::verify::run(&workspace_hint),
                 Commands::Build => commands::build::run(&workspace_hint),
                 Commands::NextMilestone => commands::next_milestone::run(&workspace_hint),

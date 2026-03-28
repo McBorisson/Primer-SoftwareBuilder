@@ -22,7 +22,7 @@ primer_state:
 - `workspace_root`: required absolute path to the learner project workspace
 - `milestone_id`: required, mutable via `next-milestone` only
 - `verified_milestone_id`: optional, set by `verify` when current milestone passes
-- `track`: required, immutable for the current command flow
+- `track`: required, mutable via `track`
 - `stack_id`: required, immutable for the current command flow
 
 ## Read Rules
@@ -36,6 +36,7 @@ primer_state:
 ## Write Rules
 
 - `verify` may set `verified_milestone_id` to the current milestone when verification passes.
+- `track` may update `track` while keeping milestone and verification state unchanged.
 - `next-milestone` may update `milestone_id` and clear `verified_milestone_id`.
 - `build`, `explain`, and `status` must not mutate state.
 - If current milestone is final, `next-milestone` must not mutate state.

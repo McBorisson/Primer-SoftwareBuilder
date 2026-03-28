@@ -489,6 +489,8 @@ fn status_surfaces_if_stuck_guidance_after_two_failures() {
     assert!(stdout.contains("likely stuck after 2 consecutive failed verifications"));
     assert!(stdout.contains("Follow the milestone's If stuck guidance"));
     assert!(stdout.contains("First confirm the file path"));
+    assert!(stdout.contains("primer track learner"));
+    assert!(stdout.contains("primer track builder"));
 }
 
 #[test]
@@ -509,6 +511,8 @@ fn verify_failure_flags_scope_risk_after_three_failures() {
     ));
     assert!(stderr.contains("Run primer explain for more context before the next retry."));
     assert!(stderr.contains("If stuck: First confirm the file path and then re-run verification."));
+    assert!(stderr.contains("primer track learner"));
+    assert!(stderr.contains("primer track builder"));
     assert!(stderr.contains("This milestone may be too large or unclear. Consider splitting or clarifying it before more retries."));
 }
 
@@ -527,6 +531,55 @@ fn build_shows_current_spec_and_track_guidance() {
     assert!(stdout.contains("Milestone 01: Alpha"));
     assert!(stdout.contains("Explain the alpha task before coding."));
     assert!(stdout.contains("Run the skill primer-verify when the milestone is complete"));
+    assert!(stdout.contains("primer track learner"));
+    assert!(stdout.contains("primer track builder"));
+}
+
+#[test]
+fn track_switch_updates_state_and_build_guidance() {
+    let (_primer_root, workspace_root) = setup_fixture("track-switch", Some("01-alpha"));
+
+    let output = run_primer(&workspace_root, &["track", "builder"]);
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("Switched track to builder"));
+    assert!(stdout.contains("Previous track"));
+    assert!(stdout.contains("Active track"));
+    let context = read_context(&workspace_root);
+    assert!(context.contains("track: builder"));
+    assert!(context.contains("verified_milestone_id: 01-alpha"));
+
+    let build = run_primer(&workspace_root, &["build"]);
+    assert!(
+        build.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+    let build_stdout = String::from_utf8_lossy(&build.stdout);
+    assert!(build_stdout.contains("Implement the alpha task directly."));
+}
+
+#[test]
+fn track_switch_is_a_noop_when_track_is_already_active() {
+    let (_primer_root, workspace_root) = setup_fixture("track-noop", None);
+
+    let output = run_primer(&workspace_root, &["track", "learner"]);
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("Track is already"));
+    let context = read_context(&workspace_root);
+    assert!(context.contains("track: learner"));
+    assert!(context.contains("verified_milestone_id: null"));
 }
 
 #[test]

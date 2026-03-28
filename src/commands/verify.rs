@@ -86,10 +86,13 @@ pub fn run(workspace_hint: &Path) -> Result<()> {
         if retry_assessment.should_suggest_explain() {
             eprintln!("Run primer explain for more context before the next retry.");
         }
-        if retry_assessment.should_surface_if_stuck()
-            && let Some(split_if_stuck) = milestone.split_if_stuck.as_ref()
-        {
-            eprintln!("If stuck: {split_if_stuck}");
+        if retry_assessment.should_surface_if_stuck() {
+            if let Some(split_if_stuck) = milestone.split_if_stuck.as_ref() {
+                eprintln!("If stuck: {split_if_stuck}");
+            }
+            eprintln!(
+                "If a different mode would help, switch tracks with `primer track learner` or `primer track builder`."
+            );
         }
         if retry_assessment.should_flag_scope_risk() {
             eprintln!(
