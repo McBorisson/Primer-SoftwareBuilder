@@ -32,6 +32,7 @@ pub fn generate(
     tool: Tool,
     track: &str,
     milestone_id: &str,
+    verified_milestone_id: Option<&str>,
 ) -> Result<()> {
     let workflow = AdapterWorkflow {
         title: &recipe.title,
@@ -41,7 +42,14 @@ pub fn generate(
         stack_id: Some(&recipe.stack_id),
         milestones: &recipe.milestones,
     };
-    generate_internal(&workflow, output_dir, tool, track, milestone_id)
+    generate_internal(
+        &workflow,
+        output_dir,
+        tool,
+        track,
+        milestone_id,
+        verified_milestone_id,
+    )
 }
 
 pub fn generate_workstream(
@@ -50,6 +58,7 @@ pub fn generate_workstream(
     tool: Tool,
     track: &str,
     milestone_id: &str,
+    verified_milestone_id: Option<&str>,
 ) -> Result<()> {
     let workflow = AdapterWorkflow {
         title: &workflow.title,
@@ -59,7 +68,14 @@ pub fn generate_workstream(
         stack_id: workflow.stack_id.as_deref(),
         milestones: &workflow.milestones,
     };
-    generate_internal(&workflow, output_dir, tool, track, milestone_id)
+    generate_internal(
+        &workflow,
+        output_dir,
+        tool,
+        track,
+        milestone_id,
+        verified_milestone_id,
+    )
 }
 
 pub fn context_path_for_tool(tool: Tool) -> &'static str {
@@ -120,14 +136,45 @@ fn generate_internal(
     tool: Tool,
     track: &str,
     milestone_id: &str,
+    verified_milestone_id: Option<&str>,
 ) -> Result<()> {
     ensure_valid_initial_milestone(workflow, milestone_id)?;
     match tool {
-        Tool::Codex => generate_codex(workflow, output_dir, track, milestone_id),
-        Tool::Claude => generate_claude(workflow, output_dir, track, milestone_id),
-        Tool::Cursor => generate_cursor(workflow, output_dir, track, milestone_id),
-        Tool::Gemini => generate_gemini(workflow, output_dir, track, milestone_id),
-        Tool::Opencode => generate_opencode(workflow, output_dir, track, milestone_id),
+        Tool::Codex => generate_codex(
+            workflow,
+            output_dir,
+            track,
+            milestone_id,
+            verified_milestone_id,
+        ),
+        Tool::Claude => generate_claude(
+            workflow,
+            output_dir,
+            track,
+            milestone_id,
+            verified_milestone_id,
+        ),
+        Tool::Cursor => generate_cursor(
+            workflow,
+            output_dir,
+            track,
+            milestone_id,
+            verified_milestone_id,
+        ),
+        Tool::Gemini => generate_gemini(
+            workflow,
+            output_dir,
+            track,
+            milestone_id,
+            verified_milestone_id,
+        ),
+        Tool::Opencode => generate_opencode(
+            workflow,
+            output_dir,
+            track,
+            milestone_id,
+            verified_milestone_id,
+        ),
     }
 }
 
@@ -155,6 +202,7 @@ fn generate_codex(
     output_dir: &Path,
     track: &str,
     milestone_id: &str,
+    verified_milestone_id: Option<&str>,
 ) -> Result<()> {
     let agents_md = output_dir.join("AGENTS.md");
     let skills_root = output_dir.join(".agents").join("skills");
@@ -162,7 +210,13 @@ fn generate_codex(
 
     fs::write(
         &agents_md,
-        render_adapter_context(workflow, output_dir, track, milestone_id),
+        render_adapter_context(
+            workflow,
+            output_dir,
+            track,
+            milestone_id,
+            verified_milestone_id,
+        ),
     )?;
 
     for filename in PRIMER_WORKFLOW_FILES {
@@ -211,6 +265,7 @@ fn generate_claude(
     output_dir: &Path,
     track: &str,
     milestone_id: &str,
+    verified_milestone_id: Option<&str>,
 ) -> Result<()> {
     let claude_md = output_dir.join("CLAUDE.md");
     let commands_dir = output_dir.join(".claude").join("commands");
@@ -218,7 +273,13 @@ fn generate_claude(
 
     fs::write(
         &claude_md,
-        render_adapter_context(workflow, output_dir, track, milestone_id),
+        render_adapter_context(
+            workflow,
+            output_dir,
+            track,
+            milestone_id,
+            verified_milestone_id,
+        ),
     )?;
 
     for filename in PRIMER_WORKFLOW_FILES {
@@ -244,6 +305,7 @@ fn generate_opencode(
     output_dir: &Path,
     track: &str,
     milestone_id: &str,
+    verified_milestone_id: Option<&str>,
 ) -> Result<()> {
     let agents_md = output_dir.join("AGENTS.md");
     let skills_root = output_dir.join(".opencode").join("skills");
@@ -251,7 +313,13 @@ fn generate_opencode(
 
     fs::write(
         &agents_md,
-        render_adapter_context(workflow, output_dir, track, milestone_id),
+        render_adapter_context(
+            workflow,
+            output_dir,
+            track,
+            milestone_id,
+            verified_milestone_id,
+        ),
     )?;
 
     for filename in PRIMER_WORKFLOW_FILES {
@@ -284,6 +352,7 @@ fn generate_cursor(
     output_dir: &Path,
     track: &str,
     milestone_id: &str,
+    verified_milestone_id: Option<&str>,
 ) -> Result<()> {
     let agents_md = output_dir.join("AGENTS.md");
     let skills_root = output_dir.join(".cursor").join("skills");
@@ -291,7 +360,13 @@ fn generate_cursor(
 
     fs::write(
         &agents_md,
-        render_adapter_context(workflow, output_dir, track, milestone_id),
+        render_adapter_context(
+            workflow,
+            output_dir,
+            track,
+            milestone_id,
+            verified_milestone_id,
+        ),
     )?;
 
     for filename in PRIMER_WORKFLOW_FILES {
@@ -324,6 +399,7 @@ fn generate_gemini(
     output_dir: &Path,
     track: &str,
     milestone_id: &str,
+    verified_milestone_id: Option<&str>,
 ) -> Result<()> {
     let gemini_md = output_dir.join("GEMINI.md");
     let skills_root = output_dir.join(".gemini").join("skills");
@@ -331,7 +407,13 @@ fn generate_gemini(
 
     fs::write(
         &gemini_md,
-        render_adapter_context(workflow, output_dir, track, milestone_id),
+        render_adapter_context(
+            workflow,
+            output_dir,
+            track,
+            milestone_id,
+            verified_milestone_id,
+        ),
     )?;
 
     for filename in PRIMER_WORKFLOW_FILES {
@@ -364,20 +446,23 @@ fn render_adapter_context(
     workspace_root: &Path,
     track: &str,
     milestone_id: &str,
+    verified_milestone_id: Option<&str>,
 ) -> String {
     let stack_id = workflow
         .stack_id
         .map(|stack_id| format!("  stack_id: {stack_id}\n"))
         .unwrap_or_default();
+    let verified_milestone_id = verified_milestone_id.unwrap_or("null");
     let source_label = workflow.source_kind.label();
     format!(
-        "# Primer — {}\n\n```yaml\nprimer_state:\n  schema_version: 2\n  source:\n    kind: {}\n    id: {}\n    path: {}\n  workspace_root: {}\n  milestone_id: {}\n  verified_milestone_id: null\n  track: {}\n{}```\n\n## {} location\n\n{}/\n\n## Workspace root\n\n{}/\n\n## Rules\n\n- Always read the current milestone `agent.md` before starting work.\n- Work in this project workspace, not in the `primer` repository.\n- Build the current milestone in small steps and do not implement future milestones early.\n- Run current milestone verification before declaring completion.\n- Only run `primer-next-milestone` after `primer-verify` has marked the current milestone as verified.\n- Use the local `primer` CLI as the source of truth for `primer-build`, `primer-track`, `primer-verify`, `primer-status`, `primer-explain`, and `primer-next-milestone`.\n- Use the generated Primer workflow actions for behavior rules.\n\n## Track Invariants\n\n{}\n\n## Available workflow actions\n\n- `primer-build` — implement the current milestone step by step\n- `primer-track` — switch the active learner or builder track for this workspace\n- `primer-next-milestone` — advance state only after the milestone is already verified\n- `primer-verify` — run current milestone verification\n- `primer-explain` — show current milestone explanation\n- `primer-status` — show current state and progress\n",
+        "# Primer — {}\n\n```yaml\nprimer_state:\n  schema_version: 2\n  source:\n    kind: {}\n    id: {}\n    path: {}\n  workspace_root: {}\n  milestone_id: {}\n  verified_milestone_id: {}\n  track: {}\n{}```\n\n## {} location\n\n{}/\n\n## Workspace root\n\n{}/\n\n## Rules\n\n- Always read the current milestone `agent.md` before starting work.\n- Work in this project workspace, not in the `primer` repository.\n- Build the current milestone in small steps and do not implement future milestones early.\n- Run current milestone verification before declaring completion.\n- Only run `primer-next-milestone` after `primer-verify` has marked the current milestone as verified.\n- Use the local `primer` CLI as the source of truth for `primer-build`, `primer-track`, `primer-verify`, `primer-status`, `primer-explain`, and `primer-next-milestone`.\n- Use the generated Primer workflow actions for behavior rules.\n\n## Track Invariants\n\n{}\n\n## Available workflow actions\n\n- `primer-build` — implement the current milestone step by step\n- `primer-track` — switch the active learner or builder track for this workspace\n- `primer-next-milestone` — advance state only after the milestone is already verified\n- `primer-verify` — run current milestone verification\n- `primer-explain` — show current milestone explanation\n- `primer-status` — show current state and progress\n",
         workflow.title,
         workflow.source_kind.as_str(),
         workflow.source_id,
         workflow.source_path.display(),
         workspace_root.display(),
         milestone_id,
+        verified_milestone_id,
         track,
         stack_id,
         source_label,
@@ -536,6 +621,7 @@ mod tests {
             Tool::Codex,
             "learner",
             "01-bootloader",
+            None,
         )
         .expect("adapter generation should succeed");
 
@@ -568,6 +654,7 @@ mod tests {
             Tool::Claude,
             "builder",
             "03-vga-output",
+            None,
         )
         .expect("adapter generation should succeed");
 
@@ -601,6 +688,7 @@ mod tests {
             Tool::Opencode,
             "learner",
             "01-bootloader",
+            None,
         )
         .expect("adapter generation should succeed");
 
@@ -634,6 +722,7 @@ mod tests {
             Tool::Gemini,
             "learner",
             "01-bootloader",
+            None,
         )
         .expect("adapter generation should succeed");
 
@@ -667,6 +756,7 @@ mod tests {
             Tool::Cursor,
             "learner",
             "01-bootloader",
+            None,
         )
         .expect("adapter generation should succeed");
 

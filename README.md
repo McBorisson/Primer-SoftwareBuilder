@@ -327,7 +327,7 @@ Use the CLI directly for setup, diagnostics, and terminal utilities:
 | `primer doctor` | Check local prerequisites for a recipe milestone | before you begin or when setup is failing |
 | `primer workstream list` | List initialized brownfield workstreams in the current repository | when you want to see what is available and which one is active |
 | `primer workstream init` | Bootstrap Primer inside the current repository for one brownfield workstream | when you want a milestone path inside an existing repo |
-| `primer workstream switch` | Activate another initialized brownfield workstream in the current repository | when you want to move between repo-local workstreams |
+| `primer workstream switch` | Activate and resume another initialized brownfield workstream in the current repository | when you want to move between repo-local workstreams |
 | `primer track` | Switch the active learner or builder track in the current workspace | when you want to change interaction style mid-workflow |
 | `primer completions` | Generate shell completion scripts | when you want faster terminal use |
 
@@ -362,7 +362,7 @@ After `primer init`, your generated workspace contains:
 
 For most users, the generated workspace opened inside the AI coding agent is the primary interface. The CLI exists to support that workflow.
 
-For brownfield work inside an existing repository, Primer can also run in repo-local workstream mode. In that case it stores authored workstream files under `.primer/workstreams/<workstream-id>/` and runtime verification history under `.primer/runtime/workstreams/<workstream-id>/`, while keeping one active workstream in the root adapter context at a time via `primer workstream switch`.
+For brownfield work inside an existing repository, Primer can also run in repo-local workstream mode. In that case it stores authored workstream files under `.primer/workstreams/<workstream-id>/` and runtime state under `.primer/runtime/workstreams/<workstream-id>/`, while keeping one active workstream in the root adapter context at a time via `primer workstream switch`.
 
 ## Troubleshooting
 

@@ -61,7 +61,15 @@ fn generate_adapter(
     milestone_id: &str,
 ) -> Result<()> {
     let spinner = ui::spinner("Generating Primer adapter files...");
-    let result = adapter::generate(recipe, recipe_dir, output_dir, tool, track, milestone_id);
+    let result = adapter::generate(
+        recipe,
+        recipe_dir,
+        output_dir,
+        tool,
+        track,
+        milestone_id,
+        None,
+    );
     spinner.finish_and_clear();
 
     if let Err(err) = result {

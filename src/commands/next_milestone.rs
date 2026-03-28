@@ -4,6 +4,7 @@ use std::path::Path;
 use crate::state;
 use crate::ui;
 use crate::workflow;
+use crate::workstream_resume;
 
 pub fn run(workspace_hint: &Path) -> Result<()> {
     let mut state = state::load_from_workspace(workspace_hint)?;
@@ -33,6 +34,7 @@ pub fn run(workspace_hint: &Path) -> Result<()> {
     state.milestone_id = next.id.clone();
     state.verified_milestone_id = None;
     state::write(&state)?;
+    workstream_resume::sync_from_state(&state)?;
 
     let spec_path = workflow
         .path

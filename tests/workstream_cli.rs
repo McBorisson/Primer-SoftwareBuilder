@@ -50,6 +50,24 @@ fn read(path: &Path) -> String {
     fs::read_to_string(path).expect("failed to read file")
 }
 
+fn write_file(path: &Path, contents: &str) {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).expect("failed to create parent dirs");
+    }
+    fs::write(path, contents).expect("failed to write file");
+}
+
+fn make_executable(path: &Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+
+        let mut perms = fs::metadata(path).expect("missing file").permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(path, perms).expect("failed to set permissions");
+    }
+}
+
 #[test]
 fn workstream_list_reports_when_no_workstreams_exist() {
     let repo = temp_dir("workstream-list-empty");
@@ -234,6 +252,163 @@ fn workstream_list_shows_initialized_workstreams_and_marks_the_active_one() {
     assert!(stdout.contains(
         "Use primer workstream switch <workstream-id> to activate a different workstream"
     ));
+}
+
+#[test]
+fn workstream_switch_restores_saved_milestone_and_verified_state() {
+    let repo = temp_dir("workstream-resume");
+    fs::create_dir_all(repo.join(".git")).expect("failed to create .git dir");
+
+    let auth_init = run_primer(
+        &repo,
+        &[
+            "workstream",
+            "init",
+            "auth-refactor",
+            "--goal",
+            "Reduce auth pipeline complexity",
+            "--tool",
+            "codex",
+            "--track",
+            "builder",
+        ],
+    );
+    assert!(
+        auth_init.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&auth_init.stderr)
+    );
+
+    write_file(
+        &repo.join(".primer/workstreams/auth-refactor/workstream.yaml"),
+        r#"id: auth-refactor
+title: Auth Refactor
+goal: Reduce auth pipeline complexity
+repository_root: /tmp/unused-for-test
+tracks:
+  learner:
+    description: Learn safely.
+  builder:
+    description: Build directly.
+milestones:
+  - id: 01-customize-first-milestone
+    title: Customize the first repo-specific milestone
+    goal: Make the first auth milestone pass.
+    verification_summary: Verification passes when the first auth verification script exits successfully.
+  - id: 02-auth-observability
+    title: Add auth observability
+    goal: Add observability to the auth flow.
+    verification_summary: Verification passes when the second auth verification script exits successfully.
+"#,
+    );
+    write_file(
+        &repo.join(
+            ".primer/workstreams/auth-refactor/milestones/01-customize-first-milestone/tests/verify.sh",
+        ),
+        "#!/usr/bin/env bash\nset -euo pipefail\necho first auth milestone verified\n",
+    );
+    make_executable(&repo.join(
+        ".primer/workstreams/auth-refactor/milestones/01-customize-first-milestone/tests/verify.sh",
+    ));
+    write_file(
+        &repo.join(".primer/workstreams/auth-refactor/milestones/02-auth-observability/spec.md"),
+        "# Milestone 02: Auth observability\n\nResume me after switching.\n",
+    );
+    write_file(
+        &repo.join(".primer/workstreams/auth-refactor/milestones/02-auth-observability/agent.md"),
+        r#"# Agent Instructions: 02-auth-observability
+
+## Learner Track
+
+Explain the observability work before coding and ask one question?
+
+## Builder Track
+
+Implement the observability milestone directly and run verification.
+"#,
+    );
+    write_file(
+        &repo.join(
+            ".primer/workstreams/auth-refactor/milestones/02-auth-observability/explanation.md",
+        ),
+        "# Explanation: 02-auth-observability\n\nObserve auth state.\n",
+    );
+    write_file(
+        &repo.join(
+            ".primer/workstreams/auth-refactor/milestones/02-auth-observability/tests/verify.sh",
+        ),
+        "#!/usr/bin/env bash\nset -euo pipefail\necho second auth milestone verified\n",
+    );
+    make_executable(&repo.join(
+        ".primer/workstreams/auth-refactor/milestones/02-auth-observability/tests/verify.sh",
+    ));
+
+    let verify_first = run_primer(&repo, &["verify"]);
+    assert!(
+        verify_first.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&verify_first.stderr)
+    );
+    let advance = run_primer(&repo, &["next-milestone"]);
+    assert!(
+        advance.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&advance.stderr)
+    );
+    let verify_second = run_primer(&repo, &["verify"]);
+    assert!(
+        verify_second.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&verify_second.stderr)
+    );
+
+    let billing_init = run_primer(
+        &repo,
+        &[
+            "workstream",
+            "init",
+            "billing-webhooks",
+            "--goal",
+            "Harden webhook processing",
+            "--tool",
+            "codex",
+            "--track",
+            "learner",
+        ],
+    );
+    assert!(
+        billing_init.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&billing_init.stderr)
+    );
+
+    let switch_back = run_primer(&repo, &["workstream", "switch", "auth-refactor"]);
+    assert!(
+        switch_back.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&switch_back.stderr)
+    );
+    let switch_stdout = String::from_utf8_lossy(&switch_back.stdout);
+    assert!(switch_stdout.contains("restored saved progress"));
+    assert!(switch_stdout.contains("02-auth-observability"));
+    assert!(switch_stdout.contains("Verified current milestone"));
+    assert!(switch_stdout.contains("yes"));
+
+    let context = read(&repo.join("AGENTS.md"));
+    assert!(context.contains("id: auth-refactor"));
+    assert!(context.contains("milestone_id: 02-auth-observability"));
+    assert!(context.contains("verified_milestone_id: 02-auth-observability"));
+    assert!(context.contains("track: learner"));
+
+    let status = run_primer(&repo, &["status"]);
+    assert!(
+        status.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&status.stderr)
+    );
+    let status_stdout = String::from_utf8_lossy(&status.stdout);
+    assert!(status_stdout.contains("02-auth-observability"));
+    assert!(status_stdout.contains("complete"));
 }
 
 #[test]

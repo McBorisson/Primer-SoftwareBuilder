@@ -11,6 +11,7 @@ use crate::state;
 use crate::ui;
 use crate::verification_history::{self, VerificationCommand, VerificationOutcome};
 use crate::workflow;
+use crate::workstream_resume;
 
 pub fn run(workspace_hint: &Path) -> Result<()> {
     let mut state = state::load_from_workspace(workspace_hint)?;
@@ -56,6 +57,7 @@ pub fn run(workspace_hint: &Path) -> Result<()> {
         if cleared_prior_verified_state {
             state.verified_milestone_id = None;
             state::write(&state)?;
+            workstream_resume::sync_from_state(&state)?;
         }
 
         verification_history::write_record(
@@ -112,6 +114,7 @@ pub fn run(workspace_hint: &Path) -> Result<()> {
 
     state.verified_milestone_id = Some(milestone.id.clone());
     state::write(&state)?;
+    workstream_resume::sync_from_state(&state)?;
     verification_history::write_record(
         &state,
         &verification_command,

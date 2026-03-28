@@ -9,6 +9,7 @@ use crate::state::{self, PrimerState};
 use crate::ui;
 use crate::workflow::{self, WorkflowSourceKind};
 use crate::workstream;
+use crate::workstream_resume;
 
 pub fn list(workspace_hint: &Path) -> Result<()> {
     let repo_root = workstream::ensure_repository_root(workspace_hint)?;
@@ -138,11 +139,14 @@ pub fn init(workspace_hint: &Path, args: WorkstreamInitArgs) -> Result<()> {
             tool,
             args.track.as_str(),
             workstream::INITIAL_MILESTONE_ID,
+            None,
         )?;
         Ok((workflow, tool))
     })();
     spinner.finish_and_clear();
     let (workflow, tool) = result?;
+    let active_state = state::load_from_workspace(&repo_root)?;
+    workstream_resume::sync_from_state(&active_state)?;
 
     let context_path = repo_root.join(adapter::context_path_for_tool(tool));
     ui::success("Initialized Primer workstream");
@@ -245,15 +249,22 @@ pub fn switch(workspace_hint: &Path, args: WorkstreamSwitchArgs) -> Result<()> {
     }
 
     let target_workflow = workflow::load(&target_source)?;
-    let first_milestone = workflow::resolve_initial_milestone(&target_workflow, None)?;
+    let resumed_state = workstream_resume::resolve_for_workflow(&target_workflow, &repo_root)?;
+    let current_milestone =
+        workflow::resolve_initial_milestone(&target_workflow, Some(&resumed_state.milestone_id))?;
     let tool = adapter::detect_tool(&repo_root, &active_state.context_path)?;
     adapter::generate_workstream(
         &target_workflow,
         &repo_root,
         tool,
         &active_state.track,
-        &first_milestone.id,
+        &resumed_state.milestone_id,
+        resumed_state.verified_milestone_id.as_deref(),
     )?;
+    let target_state = state::load_from_workspace(&repo_root)?;
+    workstream_resume::sync_from_state(&target_state)?;
+    let current_milestone_verified =
+        resumed_state.verified_milestone_id.as_deref() == Some(current_milestone.id.as_str());
 
     ui::section("Primer workstream switch");
     println!();
@@ -282,7 +293,29 @@ pub fn switch(workspace_hint: &Path, args: WorkstreamSwitchArgs) -> Result<()> {
         },
         ui::KeyValueRow {
             key: "Current milestone".to_string(),
-            value: format!("{} ({})", first_milestone.id, first_milestone.title),
+            value: format!("{} ({})", current_milestone.id, current_milestone.title),
+            value_color: None,
+        },
+        ui::KeyValueRow {
+            key: "Verified current milestone".to_string(),
+            value: if current_milestone_verified {
+                "yes".to_string()
+            } else {
+                "no".to_string()
+            },
+            value_color: Some(if current_milestone_verified {
+                Color::Green
+            } else {
+                Color::Yellow
+            }),
+        },
+        ui::KeyValueRow {
+            key: "Resume state".to_string(),
+            value: if resumed_state.resumed_previous_progress {
+                "restored saved progress".to_string()
+            } else {
+                "started from the first milestone".to_string()
+            },
             value_color: None,
         },
         ui::KeyValueRow {
@@ -294,17 +327,25 @@ pub fn switch(workspace_hint: &Path, args: WorkstreamSwitchArgs) -> Result<()> {
 
     println!();
     ui::section("Next");
-    ui::numbered_steps(&[
-        format!(
-            "Run the {} to inspect the active milestone for {}",
-            ui::reference("skill", "primer-status"),
-            ui::code(&target_workflow.source.id)
-        ),
-        format!(
-            "Run the {} to load the first milestone contract for the active workstream",
-            ui::reference("skill", "primer-build")
-        ),
-    ]);
+    let mut steps = vec![format!(
+        "Run the {} to inspect the active milestone for {}",
+        ui::reference("skill", "primer-status"),
+        ui::code(&target_workflow.source.id)
+    )];
+    if current_milestone_verified {
+        steps.push(format!(
+            "Run the {} when you are ready to advance from {}",
+            ui::reference("skill", "primer-next-milestone"),
+            ui::code(&current_milestone.id)
+        ));
+    } else {
+        steps.push(format!(
+            "Run the {} to continue work on {}",
+            ui::reference("skill", "primer-build"),
+            ui::code(&current_milestone.id)
+        ));
+    }
+    ui::numbered_steps(&steps);
 
     Ok(())
 }

@@ -12,6 +12,7 @@ mod verification_history;
 mod workflow;
 mod workspace;
 mod workstream;
+mod workstream_resume;
 
 use anyhow::Result;
 use clap::{CommandFactory, Parser};

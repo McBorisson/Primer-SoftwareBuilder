@@ -6,6 +6,7 @@ use crate::cli::TrackArgs;
 use crate::state;
 use crate::ui;
 use crate::workflow;
+use crate::workstream_resume;
 
 pub fn run(workspace_hint: &Path, args: TrackArgs) -> Result<()> {
     let mut state = state::load_from_workspace(workspace_hint)?;
@@ -20,6 +21,7 @@ pub fn run(workspace_hint: &Path, args: TrackArgs) -> Result<()> {
     if changed {
         state.track = next_track.to_string();
         state::write(&state)?;
+        workstream_resume::sync_from_state(&state)?;
     }
 
     ui::section("Primer track");
