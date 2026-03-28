@@ -43,7 +43,7 @@ pub enum Commands {
 
     /// Run verification for the current milestone
     #[command(name = "verify", visible_alias = "check")]
-    Verify,
+    Verify(VerifyArgs),
 
     /// Advance to the next milestone after verification
     #[command(name = "next-milestone")]
@@ -160,6 +160,13 @@ pub struct TrackArgs {
 
 #[derive(Debug, Clone, Args)]
 pub struct StatusArgs {
+    /// Print machine-readable JSON output
+    #[arg(long)]
+    pub json: bool,
+}
+
+#[derive(Debug, Clone, Args)]
+pub struct VerifyArgs {
     /// Print machine-readable JSON output
     #[arg(long)]
     pub json: bool,

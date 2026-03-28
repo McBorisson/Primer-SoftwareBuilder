@@ -48,7 +48,7 @@ fn main() -> Result<()> {
                 },
                 Commands::Status(args) => commands::status::run(&workspace_hint, args),
                 Commands::Track(args) => commands::track::run(&workspace_hint, args),
-                Commands::Verify => commands::verify::run(&workspace_hint),
+                Commands::Verify(args) => commands::verify::run(&workspace_hint, args),
                 Commands::Build => commands::build::run(&workspace_hint),
                 Commands::NextMilestone => commands::next_milestone::run(&workspace_hint),
                 Commands::Explain => commands::explain::run(&workspace_hint),

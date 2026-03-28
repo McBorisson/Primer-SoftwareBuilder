@@ -228,6 +228,21 @@ fn workstream_flow_uses_repo_local_source_and_runtime_layout() {
     let records =
         verification_record_files(&repo, "billing-webhooks", "01-customize-first-milestone");
     assert_eq!(records.len(), 1);
+
+    let verify_json = run_primer(&repo, &["verify", "--json"]);
+    assert!(!verify_json.status.success());
+    let json: serde_json::Value =
+        serde_json::from_slice(&verify_json.stdout).expect("failed to parse JSON output");
+    assert_eq!(json["source"]["kind"], "workstream");
+    assert_eq!(json["source"]["id"], "billing-webhooks");
+    assert_eq!(json["milestone"]["id"], "01-customize-first-milestone");
+    assert_eq!(json["outcome"], "failed");
+    assert!(
+        json["command_stderr"]
+            .as_str()
+            .expect("command_stderr should be present")
+            .contains("TODO: replace .primer/workstreams/billing-webhooks")
+    );
 }
 
 #[test]

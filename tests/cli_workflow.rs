@@ -265,6 +265,43 @@ fn verify_updates_verified_milestone_on_success() {
 }
 
 #[test]
+fn verify_json_reports_success_event() {
+    let (_primer_root, workspace_root) = setup_fixture("verify-json-success", None);
+    write_file(&workspace_root.join("milestone.ok"), "ok\n");
+
+    let output = run_primer(&workspace_root, &["verify", "--json"]);
+
+    assert!(
+        output.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let json: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("failed to parse JSON output");
+    assert_eq!(json["source"]["kind"], "recipe");
+    assert_eq!(json["source"]["id"], "demo");
+    assert_eq!(json["milestone"]["id"], "01-alpha");
+    assert_eq!(json["outcome"], "passed");
+    assert_eq!(json["verified_state_after"], true);
+    assert_eq!(json["cleared_prior_verified_state"], false);
+    assert_eq!(json["verification"]["attempts"], 1);
+    assert_eq!(json["verification"]["passed_attempts"], 1);
+    assert_eq!(json["verification_gate_after"]["state"], "open");
+    assert!(
+        json["record_path"]
+            .as_str()
+            .expect("record_path should be present")
+            .contains(".primer/runtime/verifications/01-alpha/")
+    );
+    assert!(
+        json["command_stdout"]
+            .as_str()
+            .expect("command_stdout should be present")
+            .contains("alpha check passed")
+    );
+}
+
+#[test]
 fn check_alias_still_verifies() {
     let (_primer_root, workspace_root) = setup_fixture("verify-alias", None);
     write_file(&workspace_root.join("milestone.ok"), "ok\n");
@@ -299,6 +336,35 @@ fn verify_failure_keeps_unverified_state_unchanged() {
     assert_eq!(record["outcome"], "failed");
     assert_eq!(record["verified_state_after"], false);
     assert_eq!(record["cleared_prior_verified_state"], false);
+}
+
+#[test]
+fn verify_json_reports_failed_event_and_keeps_stdout_machine_readable() {
+    let (_primer_root, workspace_root) = setup_fixture("verify-json-failure", Some("01-alpha"));
+
+    let output = run_primer(&workspace_root, &["verify", "--json"]);
+
+    assert!(!output.status.success());
+    let json: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("failed to parse JSON output");
+    assert_eq!(json["source"]["kind"], "recipe");
+    assert_eq!(json["milestone"]["id"], "01-alpha");
+    assert_eq!(json["outcome"], "failed");
+    assert_eq!(json["verified_state_after"], false);
+    assert_eq!(json["cleared_prior_verified_state"], true);
+    assert_eq!(json["verification"]["attempts"], 1);
+    assert_eq!(json["verification"]["failed_attempts"], 1);
+    assert_eq!(json["verification"]["failure_streak"], 1);
+    assert_eq!(json["retry_signal"]["level"], "retrying");
+    assert_eq!(json["verification_gate_after"]["state"], "blocked");
+    assert!(
+        json["command_stderr"]
+            .as_str()
+            .expect("command_stderr should be present")
+            .contains("milestone.ok is missing")
+    );
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("current verified state was cleared"));
 }
 
 #[test]
