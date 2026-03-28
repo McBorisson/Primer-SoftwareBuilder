@@ -247,6 +247,9 @@ fn workstream_list_shows_initialized_workstreams_and_marks_the_active_one() {
     assert!(stdout.contains("Active workstream"));
     assert!(stdout.contains("auth-refactor"));
     assert!(stdout.contains("billing-webhooks"));
+    assert!(stdout.contains("Current milestone"));
+    assert!(stdout.contains("01-customize-first-milestone"));
+    assert!(stdout.contains("Verified"));
     assert!(stdout.contains("active"));
     assert!(stdout.contains("available"));
     assert!(stdout.contains(
@@ -409,6 +412,18 @@ Implement the observability milestone directly and run verification.
     let status_stdout = String::from_utf8_lossy(&status.stdout);
     assert!(status_stdout.contains("02-auth-observability"));
     assert!(status_stdout.contains("complete"));
+
+    let list = run_primer(&repo, &["workstream", "list"]);
+    assert!(
+        list.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&list.stderr)
+    );
+    let list_stdout = String::from_utf8_lossy(&list.stdout);
+    assert!(list_stdout.contains("Current milestone"));
+    assert!(list_stdout.contains("02-auth-observability"));
+    assert!(list_stdout.contains("Verified"));
+    assert!(list_stdout.contains("yes"));
 }
 
 #[test]

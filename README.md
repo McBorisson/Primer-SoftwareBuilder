@@ -325,7 +325,7 @@ Use the CLI directly for setup, diagnostics, and terminal utilities:
 | `primer list` | List available recipes | when you are exploring |
 | `primer init` | Create a workspace and generate adapter files | when you are starting a new project |
 | `primer doctor` | Check local prerequisites for a recipe milestone | before you begin or when setup is failing |
-| `primer workstream list` | List initialized brownfield workstreams in the current repository | when you want to see what is available and which one is active |
+| `primer workstream list` | List initialized brownfield workstreams in the current repository, including active state and saved progress | when you want to see what is available, active, and where each workstream will resume |
 | `primer workstream init` | Bootstrap Primer inside the current repository for one brownfield workstream | when you want a milestone path inside an existing repo |
 | `primer workstream switch` | Activate and resume another initialized brownfield workstream in the current repository | when you want to move between repo-local workstreams |
 | `primer track` | Switch the active learner or builder track in the current workspace | when you want to change interaction style mid-workflow |

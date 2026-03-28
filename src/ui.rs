@@ -148,6 +148,9 @@ pub struct WorkstreamRow {
     pub title: String,
     pub status: String,
     pub status_color: Color,
+    pub current_milestone: String,
+    pub verified: String,
+    pub verified_color: Color,
     pub milestones: String,
     pub location: String,
 }
@@ -159,6 +162,8 @@ pub fn display_workstream_table(rows: &[WorkstreamRow]) {
         Cell::new("Workstream").add_attribute(Attribute::Bold),
         Cell::new("Title").add_attribute(Attribute::Bold),
         Cell::new("Status").add_attribute(Attribute::Bold),
+        Cell::new("Current milestone").add_attribute(Attribute::Bold),
+        Cell::new("Verified").add_attribute(Attribute::Bold),
         Cell::new("Milestones").add_attribute(Attribute::Bold),
         Cell::new("Location").add_attribute(Attribute::Bold),
     ]);
@@ -168,6 +173,8 @@ pub fn display_workstream_table(rows: &[WorkstreamRow]) {
             Cell::new(&row.id).fg(Color::Cyan),
             Cell::new(&row.title),
             Cell::new(&row.status).fg(row.status_color),
+            Cell::new(&row.current_milestone),
+            Cell::new(&row.verified).fg(row.verified_color),
             Cell::new(&row.milestones),
             Cell::new(&row.location).fg(Color::DarkGrey),
         ]);

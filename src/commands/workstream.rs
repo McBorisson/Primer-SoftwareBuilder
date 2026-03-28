@@ -60,6 +60,11 @@ pub fn list(workspace_hint: &Path) -> Result<()> {
         .into_iter()
         .map(|source| {
             let workflow = workflow::load(&source)?;
+            let resumed_state = workstream_resume::resolve_for_workflow(&workflow, &repo_root)?;
+            let current_milestone_id =
+                workflow::resolve_initial_milestone(&workflow, Some(&resumed_state.milestone_id))?
+                    .id
+                    .clone();
             let is_active = active_workstream_id == Some(source.id.as_str());
             Ok(ui::WorkstreamRow {
                 id: source.id,
@@ -73,6 +78,17 @@ pub fn list(workspace_hint: &Path) -> Result<()> {
                     Color::Green
                 } else {
                     Color::White
+                },
+                current_milestone: current_milestone_id,
+                verified: if resumed_state.verified_milestone_id.is_some() {
+                    "yes".to_string()
+                } else {
+                    "no".to_string()
+                },
+                verified_color: if resumed_state.verified_milestone_id.is_some() {
+                    Color::Green
+                } else {
+                    Color::Yellow
                 },
                 milestones: workflow.milestones.len().to_string(),
                 location: workflow.path.display().to_string(),
