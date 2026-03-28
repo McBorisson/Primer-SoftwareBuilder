@@ -51,6 +51,24 @@ fn read(path: &Path) -> String {
 }
 
 #[test]
+fn workstream_list_reports_when_no_workstreams_exist() {
+    let repo = temp_dir("workstream-list-empty");
+    fs::create_dir_all(repo.join(".git")).expect("failed to create .git dir");
+
+    let list = run_primer(&repo, &["workstream", "list"]);
+
+    assert!(
+        list.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&list.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&list.stdout);
+    assert!(stdout.contains("Primer workstreams"));
+    assert!(stdout.contains("No repository-local Primer workstreams found"));
+    assert!(stdout.contains("primer workstream init <workstream-id> --goal ... --tool ..."));
+}
+
+#[test]
 fn workstream_init_bootstraps_repo_local_workstream() {
     let repo = temp_dir("workstream-init");
     fs::create_dir_all(repo.join(".git")).expect("failed to create .git dir");
@@ -147,6 +165,75 @@ fn workstream_flow_uses_repo_local_source_and_runtime_layout() {
     let records =
         verification_record_files(&repo, "billing-webhooks", "01-customize-first-milestone");
     assert_eq!(records.len(), 1);
+}
+
+#[test]
+fn workstream_list_shows_initialized_workstreams_and_marks_the_active_one() {
+    let repo = temp_dir("workstream-list");
+    fs::create_dir_all(repo.join(".git")).expect("failed to create .git dir");
+
+    let first = run_primer(
+        &repo,
+        &[
+            "workstream",
+            "init",
+            "auth-refactor",
+            "--goal",
+            "Reduce auth pipeline complexity",
+            "--tool",
+            "codex",
+            "--track",
+            "builder",
+        ],
+    );
+    assert!(
+        first.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&first.stderr)
+    );
+
+    let second = run_primer(
+        &repo,
+        &[
+            "workstream",
+            "init",
+            "billing-webhooks",
+            "--goal",
+            "Harden webhook processing",
+            "--tool",
+            "codex",
+            "--track",
+            "learner",
+        ],
+    );
+    assert!(
+        second.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&second.stderr)
+    );
+
+    let switch = run_primer(&repo, &["workstream", "switch", "auth-refactor"]);
+    assert!(
+        switch.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&switch.stderr)
+    );
+
+    let list = run_primer(&repo, &["workstream", "list"]);
+    assert!(
+        list.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&list.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&list.stdout);
+    assert!(stdout.contains("Active workstream"));
+    assert!(stdout.contains("auth-refactor"));
+    assert!(stdout.contains("billing-webhooks"));
+    assert!(stdout.contains("active"));
+    assert!(stdout.contains("available"));
+    assert!(stdout.contains(
+        "Use primer workstream switch <workstream-id> to activate a different workstream"
+    ));
 }
 
 #[test]

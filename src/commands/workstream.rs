@@ -10,6 +10,104 @@ use crate::ui;
 use crate::workflow::{self, WorkflowSourceKind};
 use crate::workstream;
 
+pub fn list(workspace_hint: &Path) -> Result<()> {
+    let repo_root = workstream::ensure_repository_root(workspace_hint)?;
+    let active_state = active_primer_state(&repo_root)?;
+    let active_workstream_id = active_state
+        .as_ref()
+        .filter(|state| state.source.kind == WorkflowSourceKind::Workstream)
+        .map(|state| state.source.id.as_str());
+    let workstream_sources = workstream::discover(&repo_root)?;
+
+    ui::section("Primer workstreams");
+    println!();
+
+    if workstream_sources.is_empty() {
+        ui::info(&format!(
+            "No repository-local Primer workstreams found in {}",
+            ui::code(repo_root.display().to_string())
+        ));
+        println!();
+        ui::section("Next");
+        ui::numbered_steps(&[format!(
+            "Run {} to initialize the first workstream for this repository",
+            ui::code("primer workstream init <workstream-id> --goal ... --tool ...")
+        )]);
+        return Ok(());
+    }
+
+    ui::key_value_table(&[
+        ui::KeyValueRow {
+            key: "Repository".to_string(),
+            value: repo_root.display().to_string(),
+            value_color: Some(Color::Cyan),
+        },
+        ui::KeyValueRow {
+            key: "Active workstream".to_string(),
+            value: active_workstream_id.unwrap_or("none").to_string(),
+            value_color: active_workstream_id.map(|_| Color::Green),
+        },
+        ui::KeyValueRow {
+            key: "Count".to_string(),
+            value: workstream_sources.len().to_string(),
+            value_color: None,
+        },
+    ]);
+
+    println!();
+    let rows = workstream_sources
+        .into_iter()
+        .map(|source| {
+            let workflow = workflow::load(&source)?;
+            let is_active = active_workstream_id == Some(source.id.as_str());
+            Ok(ui::WorkstreamRow {
+                id: source.id,
+                title: workflow.title,
+                status: if is_active {
+                    "active".to_string()
+                } else {
+                    "available".to_string()
+                },
+                status_color: if is_active {
+                    Color::Green
+                } else {
+                    Color::White
+                },
+                milestones: workflow.milestones.len().to_string(),
+                location: workflow.path.display().to_string(),
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+    ui::display_workstream_table(&rows);
+
+    println!();
+    ui::section("Next");
+    let mut steps = Vec::new();
+    if let Some(active_workstream_id) = active_workstream_id {
+        steps.push(format!(
+            "Use {} to activate a different workstream",
+            ui::code("primer workstream switch <workstream-id>")
+        ));
+        steps.push(format!(
+            "Run the {} to inspect the active milestone for {}",
+            ui::reference("skill", "primer-status"),
+            ui::code(active_workstream_id)
+        ));
+    } else {
+        steps.push(
+            "Primer found workstreams but none is currently active in the root adapter context."
+                .to_string(),
+        );
+        steps.push(
+            "If you expected one to be active, restore the repository root Primer context or initialize a workstream again."
+                .to_string(),
+        );
+    }
+    ui::numbered_steps(&steps);
+
+    Ok(())
+}
+
 pub fn init(workspace_hint: &Path, args: WorkstreamInitArgs) -> Result<()> {
     let repo_root = workstream::ensure_repository_root(workspace_hint)?;
     let active_state = active_primer_state(&repo_root)?;

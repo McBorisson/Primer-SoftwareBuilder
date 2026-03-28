@@ -143,6 +143,39 @@ pub fn display_doctor_table(rows: &[DoctorRow]) {
     println!("{table}");
 }
 
+pub struct WorkstreamRow {
+    pub id: String,
+    pub title: String,
+    pub status: String,
+    pub status_color: Color,
+    pub milestones: String,
+    pub location: String,
+}
+
+pub fn display_workstream_table(rows: &[WorkstreamRow]) {
+    let mut table = Table::new();
+    table.load_preset(UTF8_FULL);
+    table.set_header(vec![
+        Cell::new("Workstream").add_attribute(Attribute::Bold),
+        Cell::new("Title").add_attribute(Attribute::Bold),
+        Cell::new("Status").add_attribute(Attribute::Bold),
+        Cell::new("Milestones").add_attribute(Attribute::Bold),
+        Cell::new("Location").add_attribute(Attribute::Bold),
+    ]);
+
+    for row in rows {
+        table.add_row(vec![
+            Cell::new(&row.id).fg(Color::Cyan),
+            Cell::new(&row.title),
+            Cell::new(&row.status).fg(row.status_color),
+            Cell::new(&row.milestones),
+            Cell::new(&row.location).fg(Color::DarkGrey),
+        ]);
+    }
+
+    println!("{table}");
+}
+
 pub struct DoctorRow {
     pub tool: String,
     pub status: String,

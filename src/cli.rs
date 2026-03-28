@@ -110,6 +110,9 @@ pub struct WorkstreamArgs {
 
 #[derive(Debug, Clone, Subcommand)]
 pub enum WorkstreamCommands {
+    /// List repository-local Primer workstreams
+    List,
+
     /// Initialize a repository-local Primer workstream
     Init(WorkstreamInitArgs),
 
