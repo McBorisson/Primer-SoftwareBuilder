@@ -22,6 +22,7 @@ Current recipes:
 ## Table of Contents
 
 - [Start Here](#start-here)
+- [Guides](#guides)
 - [5 Minute Demo](#5-minute-demo)
 - [How Primer Works](#how-primer-works)
 - [Why Primer](#why-primer)
@@ -81,6 +82,16 @@ Primer is designed so that:
 If you are new to Primer, start with `--track learner`.
 
 If you want one short walkthrough instead of the general setup story, use the [5 minute demo](docs/5-minute-primer.md).
+
+## Guides
+
+Primer's public docs now have three main entry paths:
+
+- [Learn With Primer](docs/learn-with-primer.md): the beginner-friendly path focused on `cli-tool`, learner track, and understanding the loop
+- [Build Safely With Primer](docs/build-safely-with-primer.md): the execution-focused path for milestone-by-milestone delivery and JSON wrappers
+- [Use Primer In An Existing Repository](docs/use-primer-in-existing-repo.md): the brownfield path built around workstreams, boundary analysis, and repo-local state
+
+If you only want one short walkthrough, jump straight to the [5 minute demo](docs/5-minute-primer.md).
 
 ## 5 Minute Demo
 
