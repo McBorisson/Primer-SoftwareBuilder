@@ -42,6 +42,7 @@ Current recipes:
 - [Tracks](#tracks)
 - [Agent Workflow Actions](#agent-workflow-actions)
 - [CLI Setup Commands](#cli-setup-commands)
+- [JSON Examples](#json-examples)
 - [Workspace Model](#workspace-model)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
@@ -392,6 +393,24 @@ Use `primer workstream list --json` when you need the same repository-local work
 Use `primer workstream analyze --json` when you need brownfield candidate suggestions in a machine-readable form.
 Use `primer recipe lint --json` when you need recipe lint findings in a machine-readable form.
 Use `primer milestone lint --json` when you need one milestone's lint findings in a machine-readable form.
+
+## JSON Examples
+
+Primer's JSON output is meant for small wrappers and automation, not just tests.
+
+The repo now includes example integrations in [examples/json/README.md](examples/json/README.md):
+
+- `status-summary.sh` reads `primer status --json` and prints a compact milestone summary
+- `verify-summary.sh` runs `primer verify --json`, prints a compact result summary, and exits with the same status as the verification run
+- `workstream-dashboard.sh` reads `primer workstream list --json` and prints a compact repository dashboard
+
+They use shell plus `python3`, so you can try them without adding `jq`:
+
+```bash
+bash examples/json/status-summary.sh /path/to/workspace
+bash examples/json/verify-summary.sh /path/to/workspace
+bash examples/json/workstream-dashboard.sh /path/to/repository
+```
 
 ## Workspace Model
 
